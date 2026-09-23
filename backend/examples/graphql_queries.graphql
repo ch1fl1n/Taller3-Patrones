@@ -1,0 +1,308 @@
+# Ejemplos de Queries GraphQL para Afirmative Pill
+
+## 1. Consultas de Medicamentos
+
+### Listar medicamentos con paginación
+query GetMedications {
+  medications(filter: { limit: 10, offset: 0 }) {
+    items {
+      id
+      commercialName
+      activeIngredient
+      price
+      presentation
+      laboratory
+      requiresPrescription
+      inStock
+      category {
+        id
+        name
+      }
+    }
+    totalCount
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      totalPages
+      currentPage
+    }
+  }
+}
+
+### Filtrar medicamentos por categoría
+query GetMedicationsByCategory {
+  medications(filter: {
+    categoryId: "uuid-de-categoria",
+    inStock: true,
+    limit: 20
+  }) {
+    items {
+      id
+      commercialName
+      price
+      requiresPrescription
+    }
+    totalCount
+  }
+}
+
+### Buscar medicamentos por nombre o principio activo
+query SearchMedications {
+  medications(filter: {
+    search: "paracetamol",
+    limit: 10
+  }) {
+    items {
+      id
+      commercialName
+      activeIngredient
+      price
+      laboratory
+    }
+  }
+}
+
+### Obtener ficha detallada de medicamento
+query GetMedicationDetails {
+  medication(id: "uuid-del-medicamento") {
+    id
+    commercialName
+    activeIngredient
+    laboratory
+    presentation
+    price
+    stock
+    requiresPrescription
+    indications
+    contraindications
+    category {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+## 2. Consultas de Órdenes
+
+### Obtener orden específica
+query GetOrder {
+  order(id: "uuid-de-la-orden") {
+    id
+    status
+    total
+    createdAt
+    updatedAt
+    patient {
+      id
+      fullName
+      email
+    }
+    items {
+      id
+      quantity
+      unitPrice
+      subtotal
+      medication {
+        id
+        commercialName
+        price
+        requiresPrescription
+      }
+    }
+    prescriptionEvidence {
+      id
+      documentUrl
+      validationStatus
+      validatedAt
+    }
+  }
+}
+
+### Obtener órdenes del usuario actual
+query GetMyOrders {
+  myOrders {
+    id
+    status
+    total
+    createdAt
+    items {
+      medication {
+        commercialName
+      }
+      quantity
+      subtotal
+    }
+  }
+}
+
+## 3. Mutaciones
+
+### Crear orden (con manejo de errores)
+mutation CreateOrder {
+  createOrder(input: {
+    items: [
+      {
+        medicationId: "uuid-medicamento-1"
+        quantity: 2
+      },
+      {
+        medicationId: "uuid-medicamento-2"
+        quantity: 1
+      }
+    ]
+  }) {
+    __typename
+    ... on CreateOrderSuccess {
+      order {
+        id
+        status
+        total
+        items {
+          medication {
+            commercialName
+            price
+          }
+          quantity
+          unitPrice
+          subtotal
+        }
+      }
+    }
+    ... on InsufficientStockError {
+      message
+      medicationId
+      medicationName
+      availableStock
+      requestedQuantity
+    }
+    ... on PrescriptionRequiredError {
+      message
+      medicationIds
+      medicationNames
+    }
+    ... on ValidationError {
+      message
+      code
+      field
+    }
+  }
+}
+
+### Enviar evidencia de prescripción
+mutation SubmitPrescription {
+  submitPrescriptionEvidence(input: {
+    orderId: "uuid-de-la-orden"
+    evidence: {
+      documentUrl: "https://example.com/prescription.pdf"
+    }
+  }) {
+    __typename
+    ... on SubmitPrescriptionSuccess {
+      order {
+        id
+        status
+        prescriptionEvidence {
+          validationStatus
+        }
+      }
+    }
+    ... on OrderNotFoundError {
+      message
+      orderId
+    }
+    ... on ValidationError {
+      message
+      field
+    }
+  }
+}
+
+### Confirmar orden (admin)
+mutation ConfirmOrder {
+  confirmOrder(orderId: "uuid-de-la-orden") {
+    __typename
+    ... on ConfirmOrderSuccess {
+      order {
+        id
+        status
+        updatedAt
+      }
+    }
+    ... on InvalidOrderStatusError {
+      message
+      currentStatus
+      attemptedStatus
+    }
+  }
+}
+
+### Cancelar orden
+mutation CancelOrder {
+  cancelOrder(orderId: "uuid-de-la-orden") {
+    __typename
+    ... on CancelOrderSuccess {
+      order {
+        id
+        status
+      }
+    }
+    ... on InvalidOrderStatusError {
+      message
+      currentStatus
+      attemptedStatus
+    }
+  }
+}
+
+## 4. Subscripciones
+
+### Seguir cambios de estado de una orden
+subscription OrderStatusChanged {
+  orderStatusChanged(orderId: "uuid-de-la-orden") {
+    id
+    status
+    total
+    updatedAt
+    items {
+      medication {
+        commercialName
+      }
+      quantity
+    }
+  }
+}
+
+### Monitorear cambios de stock (admin)
+subscription MedicationStockChanged {
+  medicationStockChanged(medicationId: "uuid-del-medicamento") {
+    id
+    commercialName
+    stock
+    price
+  }
+}
+
+## 5. Consultas de Sistema
+
+### Obtener categorías disponibles
+query GetCategories {
+  categories {
+    id
+    name
+    createdAt
+  }
+}
+
+### Obtener información del usuario actual
+query GetCurrentUser {
+  me {
+    id
+    fullName
+    email
+    createdAt
+  }
+}
+
+### Health check (usar con curl)
+# curl http://localhost:4000/health

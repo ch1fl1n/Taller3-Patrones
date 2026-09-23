@@ -1,0 +1,229 @@
+scalar DateTime
+scalar UUID
+
+enum OrderStatus {
+  PENDING_APPROVAL
+  APPROVED
+  DISPATCHED
+  CANCELLED
+}
+
+type Category {
+  id: UUID!
+  name: String!
+  createdAt: DateTime!
+}
+
+type Medication {
+  id: UUID!
+  commercialName: String!
+  activeIngredient: String!
+  category: Category!
+  laboratory: String!
+  presentation: String!
+  price: Float!
+  stock: Int!
+  requiresPrescription: Boolean!
+  indications: String
+  contraindications: String
+  createdAt: DateTime!
+}
+
+type MedicationSummary {
+  id: UUID!
+  commercialName: String!
+  activeIngredient: String!
+  category: Category!
+  price: Float!
+  presentation: String!
+  laboratory: String!
+  requiresPrescription: Boolean!
+  inStock: Boolean!
+}
+
+type MedicationConnection {
+  items: [MedicationSummary!]!
+  totalCount: Int!
+  pageInfo: PageInfo!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  totalPages: Int!
+  currentPage: Int!
+}
+
+input MedicationFilterInput {
+  search: String
+  categoryId: UUID
+  activeIngredient: String
+  requiresPrescription: Boolean
+  inStock: Boolean
+  minPrice: Float
+  maxPrice: Float
+  limit: Int = 20
+  offset: Int = 0
+}
+
+type OrderItem {
+  id: UUID!
+  medication: Medication!
+  quantity: Int!
+  unitPrice: Float!
+  subtotal: Float!
+  createdAt: DateTime!
+}
+
+type Order {
+  id: UUID!
+  status: OrderStatus!
+  total: Float!
+  items: [OrderItem!]!
+  patient: Patient!
+  prescriptionEvidence: PrescriptionEvidence
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Patient {
+  id: UUID!
+  fullName: String!
+  email: String!
+  createdAt: DateTime!
+}
+
+type PrescriptionEvidence {
+  id: UUID!
+  documentUrl: String!
+  validationStatus: String!
+  validatedAt: DateTime
+  createdAt: DateTime!
+}
+
+# --- Queries (Read Model) ---
+type Query {
+  # Catálogo de medicamentos
+  medications(filter: MedicationFilterInput): MedicationConnection!
+  
+  # Ficha detallada de medicamento
+  medication(id: UUID!): Medication
+  
+  # Obtener orden específica
+  order(id: UUID!): Order
+  
+  # Órdenes del usuario actual
+  myOrders: [Order!]!
+  
+  # Categorías disponibles
+  categories: [Category!]!
+  
+  # Información del paciente actual
+  me: Patient
+}
+
+# --- Inputs de comandos ---
+input OrderItemInput {
+  medicationId: UUID!
+  quantity: Int!
+}
+
+input CreateOrderInput {
+  items: [OrderItemInput!]!
+}
+
+input PrescriptionEvidenceInput {
+  documentUrl: String!
+}
+
+input SubmitPrescriptionInput {
+  orderId: UUID!
+  evidence: PrescriptionEvidenceInput!
+}
+
+# --- Payloads de errores (errores ricos, no excepciones crudas) ---
+interface MutationError {
+  message: String!
+  code: String!
+}
+
+type ValidationError implements MutationError {
+  message: String!
+  code: String!
+  field: String
+}
+
+type InsufficientStockError implements MutationError {
+  message: String!
+  code: String!
+  medicationId: UUID!
+  medicationName: String!
+  availableStock: Int!
+  requestedQuantity: Int!
+}
+
+type PrescriptionRequiredError implements MutationError {
+  message: String!
+  code: String!
+  medicationIds: [UUID!]!
+  medicationNames: [String!]!
+}
+
+type OrderNotFoundError implements MutationError {
+  message: String!
+  code: String!
+  orderId: UUID!
+}
+
+type InvalidOrderStatusError implements MutationError {
+  message: String!
+  code: String!
+  currentStatus: OrderStatus!
+  attemptedStatus: OrderStatus!
+}
+
+# --- Resultados de mutaciones ---
+type CreateOrderSuccess {
+  order: Order!
+}
+
+type SubmitPrescriptionSuccess {
+  order: Order!
+}
+
+type ConfirmOrderSuccess {
+  order: Order!
+}
+
+type CancelOrderSuccess {
+  order: Order!
+}
+
+union CreateOrderResult = CreateOrderSuccess | ValidationError | InsufficientStockError | PrescriptionRequiredError
+union SubmitPrescriptionResult = SubmitPrescriptionSuccess | ValidationError | OrderNotFoundError
+union ConfirmOrderResult = ConfirmOrderSuccess | ValidationError | OrderNotFoundError | InvalidOrderStatusError
+union CancelOrderResult = CancelOrderSuccess | ValidationError | OrderNotFoundError | InvalidOrderStatusError
+
+# --- Mutations (Write Model / Comandos) ---
+type Mutation {
+  # Crear una nueva orden
+  createOrder(input: CreateOrderInput!): CreateOrderResult!
+  
+  # Enviar evidencia de prescripción médica
+  submitPrescriptionEvidence(input: SubmitPrescriptionInput!): SubmitPrescriptionResult!
+  
+  # Confirmar orden (admin/sistema)
+  confirmOrder(orderId: UUID!): ConfirmOrderResult!
+  
+  # Cancelar orden
+  cancelOrder(orderId: UUID!): CancelOrderResult!
+}
+
+# --- Subscriptions ---
+type Subscription {
+  # Seguimiento de cambios en estado de orden
+  orderStatusChanged(orderId: UUID!): Order!
+  
+  # Actualizaciones de stock (admin)
+  medicationStockChanged(medicationId: UUID!): Medication!
+}

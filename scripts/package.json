@@ -1,0 +1,18 @@
+{
+  "name": "afirmative-pill-verification",
+  "version": "1.0.0",
+  "description": "Scripts de verificación para Afirmative Pill",
+  "main": "verification.js",
+  "scripts": {
+    "verify": "node verification.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["graphql", "cqrs", "verification", "testing"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@apollo/client": "^3.11.7",
+    "cross-fetch": "^4.0.0",
+    "graphql": "^16.8.1"
+  }
+}

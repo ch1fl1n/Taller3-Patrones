@@ -1,0 +1,51 @@
+commercial_name,active_ingredient,category,laboratory,presentation,price,stock,requires_prescription,indications,contraindications
+Paracetamol,Acetaminofén,Analgésico,Bayer,Tabletas 500mg x 20,15000,100,false,Dolor leve a moderado fiebre,Alergia al acetaminofén
+Ibuprofeno,Ibuprofeno,Antiinflamatorio,Genfar,Tabletas 400mg x 30,18000,85,false,Dolor inflamación fiebre,Ulcera gástrica embarazo
+Amoxicilina,Amoxicilina,Antibiótico,GSK,Cápsulas 500mg x 12,32000,45,true,Infecciones bacterianas,Alergia penicilinas
+Loratadina,Loratadina,Antihistamínico,Sanofi,Tabletas 10mg x 10,12500,120,false,Rinitis alérgica urticaria,Menores 2 años
+Omeprazol,Omeprazol,Antisecretor,Novartis,Cápsulas 20mg x 14,22000,75,false,Reflujo gastroesofágico,Alergia omeprazol
+Metformina,Metformina,Antidiabético,Merck,Tabletas 850mg x 30,18500,60,true,Diabetes tipo 2,Insuficiencia renal
+Atorvastatina,Atorvastatina,Hipolipemiante,Pfizer,Tabletas 20mg x 30,28500,40,true,Colesterol alto,Enfermedad hepática
+Losartán,Losartán,Antihipertensivo,AstraZeneca,Tabletas 50mg x 28,24500,55,true,Hipertensión arterial,Embarazo
+Salbutamol,Salbutamol,Broncodilatador,GSK,Inhalador 100mcg,42500,25,true,Asma bronquitis,Hipersensibilidad
+Ciprofloxacina,Ciprofloxacina,Antibiótico,Bayer,Tabletas 500mg x 10,35000,35,true,Infecciones bacterianas,Menores 18 años
+Diclofenaco,Diclofenaco,Antiinflamatorio,Novartis,Tabletas 50mg x 20,16500,70,false,Dolor inflamación,Ulcera sangrado
+Cetirizina,Cetirizina,Antihistamínico,Sanofi,Tabletas 10mg x 14,13500,95,false,Rinitis alérgica,Embarazo
+Pantoprazol,Pantoprazol,Antisecretor,Takeda,Tabletas 40mg x 14,24000,50,false,Reflujo gastroesofágico,Alergia pantoprazol
+Insulina Glargina,Insulina Glargina,Antidiabético,Sanofi,Inyectable 100UI/ml,95000,15,true,Diabetes tipo 1 y 2,Hipoglucemia
+Simvastatina,Simvastatina,Hipolipemiante,Merck,Tabletas 20mg x 30,19500,45,true,Colesterol alto,Enfermedad hepática
+Valsartán,Valsartán,Antihipertensivo,Novartis,Tabletas 160mg x 28,26500,40,true,Hipertensión arterial,Embarazo
+Budesonida,Budesonida,Corticosteroide,AstraZeneca,Inhalador 200mcg,38500,20,true,Asma EPOC,Infecciones fúngicas
+Azitromicina,Azitromicina,Antibiótico,Pfizer,Tabletas 500mg x 3,28000,30,true,Infecciones respiratorias,Alergia macrólidos
+Ketorolaco,Ketorolaco,Analgésico,Roche,Tabletas 10mg x 10,14500,65,true,Dolor moderado severo,Ulcera sangrado
+Fexofenadina,Fexofenadina,Antihistamínico,Sanofi,Tabletas 180mg x 10,15500,80,false,Rinitis alérgica,Menores 6 años
+Esomeprazol,Esomeprazol,Antisecretor,AstraZeneca,Cápsulas 40mg x 14,27500,45,false,Reflujo gastroesofágico,Alergia esomeprazol
+Metformina XR,Metformina,Antidiabético,Merck,Tabletas 1000mg x 30,21500,35,true,Diabetes tipo 2,Insuficiencia renal
+Rosuvastatina,Rosuvastatina,Hipolipemiante,AstraZeneca,Tabletas 10mg x 30,32500,25,true,Colesterol alto,Embarazo
+Telmisartán,Telmisartán,Antihipertensivo,Boehringer,Tabletas 80mg x 28,29500,30,true,Hipertensión arterial,Embarazo
+Formoterol,Formoterol,Broncodilatador,Novartis,Inhalador 12mcg,45500,18,true,Asma EPOC,Hipersensibilidad
+Levofloxacina,Levofloxacina,Antibiótico,Janssen,Tabletas 500mg x 5,38000,22,true,Infecciones bacterianas,Tendinitis
+Naproxeno,Naproxeno,Antiinflamatorio,Bayer,Tabletas 500mg x 20,17500,55,false,Dolor inflamación,Ulcera sangrado
+Desloratadina,Desloratadina,Antihistamínico,Merck,Tabletas 5mg x 10,16500,75,false,Rinitis alérgica,Menores 12 años
+Rabeprazol,Rabeprazol,Antisecretor,Eisai,Tabletas 20mg x 14,23000,40,false,Reflujo gastroesofágico,Alergia rabeprazol
+Insulina Lispro,Insulina Lispro,Antidiabético,Eli Lilly,Inyectable 100UI/ml,88000,12,true,Diabetes tipo 1 y 2,Hipoglucemia
+Pravastatina,Pravastatina,Hipolipemiante,Bristol,Tabletas 40mg x 30,20500,38,true,Colesterol alto,Enfermedad hepática
+Olmesartán,Olmesartán,Antihipertensivo,Daiichi,Tabletas 40mg x 28,28500,32,true,Hipertensión arterial,Embarazo
+Fluticasona,Fluticasona,Corticosteroide,GSK,Inhalador 250mcg,41500,16,true,Asma EPOC,Infecciones fúngicas
+Claritromicina,Claritromicina,Antibiótico,Abbott,Tabletas 500mg x 14,31000,28,true,Infecciones respiratorias,Alergia macrólidos
+Tramadol,Tramadol,Analgésico,Grünenthal,Cápsulas 50mg x 10,19500,42,true,Dolor moderado severo,Convulsiones
+Levocetirizina,Levocetirizina,Antihistamínico,UCB,Tabletas 5mg x 10,14500,85,false,Rinitis alérgica,Menores 6 años
+Dexlansoprazol,Dexlansoprazol,Antisecretor,Takeda,Cápsulas 60mg x 14,29500,28,false,Reflujo gastroesofágico,Alergia lansoprazol
+Glibenclamida,Glibenclamida,Antidiabético,Sanofi,Tabletas 5mg x 30,12500,48,true,Diabetes tipo 2,Hipoglucemia
+Atorvastatina/Exetimibe,Atorvastatina/Exetimibe,Hipolipemiante,MSD,Tabletas 10/10mg x 30,38500,20,true,Colesterol alto,Enfermedad hepática
+Perindopril,Perindopril,Antihipertensivo,Servier,Tabletas 8mg x 30,22500,36,true,Hipertensión arterial,Embarazo
+Salmeterol,Salmeterol,Broncodilatador,GSK,Inhalador 50mcg,39500,15,true,Asma EPOC,Hipersensibilidad
+Moxifloxacina,Moxifloxacina,Antibiótico,Bayer,Tabletas 400mg x 5,42000,18,true,Infecciones bacterianas,Tendinitis
+Celecoxib,Celecoxib,Antiinflamatorio,Pfizer,Cápsulas 200mg x 10,25500,32,false,Artritis dolor,Ulcera sangrado
+Bilastina,Bilastina,Antihistamínico,FAES,Tabletas 20mg x 10,17500,60,false,Rinitis alérgica,Menores 12 años
+Lansoprazol,Lansoprazol,Antisecretor,Takeda,Cápsulas 30mg x 14,21000,42,false,Reflujo gastroesofágico,Alergia lansoprazol
+Insulina Detemir,Insulina Detemir,Antidiabético,Novo Nordisk,Inyectable 100UI/ml,92000,10,true,Diabetes tipo 1 y 2,Hipoglucemia
+Fluvastatina,Fluvastatina,Hipolipemiante,Novartis,Tabletas 80mg x 30,18500,40,true,Colesterol alto,Embarazo
+Candesartán,Candesartán,Antihipertensivo,Takeda,Tabletas 32mg x 28,27500,30,true,Hipertensión arterial,Embarazo
+Beclometasona,Beclometasona,Corticosteroide,Chiesi,Inhalador 250mcg,36500,14,true,Asma EPOC,Infecciones fúngicas
+Eritromicina,Eritromicina,Antibiótico,Abbott,Tabletas 500mg x 20,19500,25,true,Infecciones respiratorias,Alergia macrólidos
