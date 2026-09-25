@@ -137,3 +137,45 @@ export const CANCEL_ORDER = gql`
     }
   }
 `;
+// Mutations para autenticación
+export const REGISTER = gql`
+  mutation Register($input: RegisterInput!) {
+    register(input: $input) {
+      __typename
+      ... on AuthSuccess {
+        token
+        user {
+          id
+          email
+          role
+          patientId
+        }
+      }
+      ... on AuthError {
+        message
+        code
+      }
+    }
+  }
+`;
+
+export const LOGIN = gql`
+  mutation Login($input: LoginInput!) {
+    login(input: $input) {
+      __typename
+      ... on AuthSuccess {
+        token
+        user {
+          id
+          email
+          role
+          patientId
+        }
+      }
+      ... on AuthError {
+        message
+        code
+      }
+    }
+  }
+`;

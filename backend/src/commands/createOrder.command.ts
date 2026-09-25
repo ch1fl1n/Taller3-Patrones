@@ -19,8 +19,18 @@ export async function createOrder(
       };
     }
 
-    // Obtener usuario actual (simulado para el taller)
-    const userId = context.user?.id || 'paciente-de-ejemplo-id';
+    // Verificar que el usuario esté autenticado y sea paciente
+    if (!context.user || context.user.role !== 'patient') {
+      return {
+        __typename: 'ValidationError',
+        message: 'Authentication required to create orders',
+        code: 'UNAUTHORIZED',
+        field: 'user',
+      };
+    }
+
+    const userId = context.user.userId;
+    const patientId = context.user.patientId || userId;
     
     // 1. Verificar stock y obtener información de medicamentos
     const medicationIds = items.map(item => item.medicationId);
@@ -96,7 +106,7 @@ export async function createOrder(
       .from('orders')
       .insert({
         id: orderId,
-        patient_id: userId,
+        patient_id: patientId,
         status: 'PENDING_APPROVAL',
         total: 0, // Se actualizará después
       })

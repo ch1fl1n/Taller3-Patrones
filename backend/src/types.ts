@@ -30,6 +30,37 @@ export interface SubmitPrescriptionInput {
   evidence: PrescriptionEvidenceInput;
 }
 
+// Tipos de autenticación
+export interface AuthInput {
+  email: string;
+  fullName?: string;
+  role?: string;
+}
+
+export interface AuthSuccess {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    patientId?: string;
+  };
+}
+
+export interface AuthError {
+  message: string;
+  code: string;
+}
+
+export type AuthResult = AuthSuccess | AuthError;
+
+export interface JWTPayload {
+  userId: string;
+  email: string;
+  role: 'patient' | 'admin' | 'pharmacist';
+  patientId?: string;
+}
+
 // Tipos de error
 export interface MutationError {
   message: string;
@@ -176,10 +207,7 @@ export interface PrescriptionEvidence {
 
 // Contexto de Apollo
 export interface ApolloContext {
-  user?: {
-    id: string;
-    email: string;
-  };
+  user?: JWTPayload;
   loaders: {
     categoryLoader: any;
     medicationLoader: any;
@@ -187,4 +215,5 @@ export interface ApolloContext {
     orderItemLoader: any;
   };
   pubsub: any;
+  supabase: any;
 }

@@ -236,3 +236,58 @@ graphql/              # Queries, mutations, subscriptions
 
 ## Licencia
 MIT
+
+
+## 🔐 Autenticación JWT
+
+### Configuración de JWT
+El sistema de autenticación JWT está pre-configurado para desarrollo:
+
+1. **Token de ejemplo** incluido en el frontend
+2. **Usuario demo** disponible con un click
+3. **Roles**: `patient`, `admin`, `pharmacist`
+
+### Probar Autenticación
+1. **Frontend**: Click en "Iniciar sesión" → "Usar demo"
+2. **GraphQL Playground**: Usar header:
+```json
+{
+  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### Mutaciones de Autenticación
+```graphql
+# Registrar nuevo usuario
+mutation Register {
+  register(input: {
+    email: "test@example.com",
+    fullName: "Test User"
+  }) {
+    __typename
+    ... on AuthSuccess {
+      token
+      user { id email role }
+    }
+  }
+}
+
+# Iniciar sesión
+mutation Login {
+  login(input: {
+    email: "test@example.com"
+  }) {
+    __typename
+    ... on AuthSuccess {
+      token
+    }
+  }
+}
+```
+
+### Ver Documentación Completa
+Ver `JWT_AUTHENTICATION.md` para detalles técnicos sobre:
+- Configuración de secret keys
+- Tokens de ejemplo
+- Flujo de autenticación
+- Consideraciones de seguridad

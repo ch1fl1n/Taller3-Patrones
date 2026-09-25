@@ -1,4 +1,5 @@
 import { ApolloContext } from '../types';
+import { register, login } from '../commands/auth.commands';
 import { createOrder } from '../commands/createOrder.command';
 import { submitPrescriptionEvidence } from '../commands/submitPrescriptionEvidence.command';
 import { confirmOrder } from '../commands/confirmOrder.command';
@@ -6,6 +7,46 @@ import { cancelOrder } from '../commands/cancelOrder.command';
 
 export const mutationResolvers = {
   Mutation: {
+    // Autenticación - Registro
+    register: async (
+      _: any,
+      { input }: { input: any },
+      context: ApolloContext
+    ) => {
+      try {
+        const result = await register(input, context);
+        return result;
+      } catch (error) {
+        console.error('Error in register mutation:', error);
+        
+        return {
+          __typename: 'AuthError',
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          code: 'INTERNAL_ERROR',
+        };
+      }
+    },
+
+    // Autenticación - Login
+    login: async (
+      _: any,
+      { input }: { input: any },
+      context: ApolloContext
+    ) => {
+      try {
+        const result = await login(input, context);
+        return result;
+      } catch (error) {
+        console.error('Error in login mutation:', error);
+        
+        return {
+          __typename: 'AuthError',
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+          code: 'INTERNAL_ERROR',
+        };
+      }
+    },
+
     // Crear una nueva orden
     createOrder: async (
       _: any,
@@ -89,6 +130,14 @@ export const mutationResolvers = {
   },
 
   // Resolvers de tipos para unions
+  AuthResult: {
+    __resolveType(obj: any) {
+      if (obj.token && obj.user) return 'AuthSuccess';
+      if (obj.message && obj.code) return 'AuthError';
+      return null;
+    },
+  },
+
   CreateOrderResult: {
     __resolveType(obj: any) {
       if (obj.order) return 'CreateOrderSuccess';

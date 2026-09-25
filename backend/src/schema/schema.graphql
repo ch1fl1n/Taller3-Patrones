@@ -204,8 +204,43 @@ union SubmitPrescriptionResult = SubmitPrescriptionSuccess | ValidationError | O
 union ConfirmOrderResult = ConfirmOrderSuccess | ValidationError | OrderNotFoundError | InvalidOrderStatusError
 union CancelOrderResult = CancelOrderSuccess | ValidationError | OrderNotFoundError | InvalidOrderStatusError
 
+# --- Inputs de autenticación ---
+input RegisterInput {
+  email: String!
+  fullName: String!
+  role: String = "patient"
+}
+
+input LoginInput {
+  email: String!
+}
+
+# --- Resultados de autenticación ---
+type AuthSuccess {
+  token: String!
+  user: UserInfo!
+}
+
+type UserInfo {
+  id: String!
+  email: String!
+  role: String!
+  patientId: String
+}
+
+type AuthError {
+  message: String!
+  code: String!
+}
+
+union AuthResult = AuthSuccess | AuthError
+
 # --- Mutations (Write Model / Comandos) ---
 type Mutation {
+  # Autenticación
+  register(input: RegisterInput!): AuthResult!
+  login(input: LoginInput!): AuthResult!
+  
   # Crear una nueva orden
   createOrder(input: CreateOrderInput!): CreateOrderResult!
   

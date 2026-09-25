@@ -1,8 +1,9 @@
 'use client';
 
-import { ShoppingCart, User, Pill, Search } from 'lucide-react';
+import { ShoppingCart, Pill, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { AuthStatus } from './AuthStatus';
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,10 +53,8 @@ export function Header() {
                 </span>
               </button>
 
-              {/* Perfil de usuario */}
-              <button className="p-2 hover:bg-secondary-100 rounded-full">
-                <User className="h-6 w-6 text-secondary-700" />
-              </button>
+              {/* Estado de autenticación */}
+              <AuthStatus />
             </div>
           </nav>
         </div>

@@ -7,14 +7,16 @@ import { getMainDefinition } from '@apollo/client/utilities';
 const GRAPHQL_ENDPOINT = 'http://localhost:4000/graphql';
 const WS_ENDPOINT = 'ws://localhost:4000/graphql';
 
-// Link HTTP para queries y mutations
-const httpLink = new HttpLink({
-  uri: GRAPHQL_ENDPOINT,
-  headers: {
-    // En producción, aquí iría el token JWT de autenticación
-    'Authorization': 'Bearer ejemplo-token',
-  },
-});
+// Función para crear link HTTP con headers de autenticación dinámicos
+const createHttpLink = () => {
+  return new HttpLink({
+    uri: GRAPHQL_ENDPOINT,
+    headers: getAuthHeaders(),
+  });
+};
+
+// Link HTTP inicial
+const httpLink = createHttpLink();
 
 // Link WebSocket para subscriptions
 const wsLink = typeof window !== 'undefined' 
@@ -43,6 +45,21 @@ const splitLink = typeof window !== 'undefined' && wsLink != null
       httpLink
     )
   : httpLink;
+
+// Función para actualizar headers de autenticación
+export function updateAuthToken(token: string | null) {
+  if (typeof window !== 'undefined') {
+    if (token) {
+      localStorage.setItem('auth_token', token);
+    } else {
+      localStorage.removeItem('auth_token');
+    }
+  }
+  
+  // Recrear el cliente Apollo con nuevos headers
+  // Nota: En producción, necesitarías reiniciar la aplicación o usar Apollo Link dinámico
+  console.log('Auth token updated. Please refresh the page for changes to take effect.');
+}
 
 // Configuración de la caché de Apollo
 const cache = new InMemoryCache({
@@ -97,10 +114,16 @@ export const client = new ApolloClient({
 
 // Función auxiliar para crear headers de autenticación
 export function getAuthHeaders() {
-  // En producción, obtendríamos el token del almacenamiento local
+  // Obtener token del almacenamiento local
   const token = typeof window !== 'undefined' 
     ? localStorage.getItem('auth_token') 
     : null;
+  
+  // Para desarrollo, si no hay token, usar token de ejemplo
+  if (!token && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    const exampleToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJwYWNpZW50ZS1kZS1lamVtcGxvLWlkIiwiZW1haWwiOiJwYWNpZW50ZUBlamVtcGxvLmNvbSIsInJvbGUiOiJwYXRpZW50IiwicGF0aWVudElkIjoicGFjaWVudGUtZGUtZWplbXBsby1pZCIsImlhdCI6MTY5OTk5OTk5OSwiZXhwIjoxNzAwNjA0Nzk5LCJpc3MiOiJhZmlybWF0aXZlLXBpbGwtYmFja2VuZCIsImF1ZCI6ImFmaXJtYXRpdmUtcGlsbC1mcm9udGVuZCJ9.example-signature';
+    return { Authorization: `Bearer ${exampleToken}` };
+  }
   
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
