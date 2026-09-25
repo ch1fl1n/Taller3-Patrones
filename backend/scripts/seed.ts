@@ -1,4 +1,5 @@
 import { supabase } from '../src/datasources/supabaseClient';
+import { DEMO_PATIENT_ID } from '../src/context';
 import { readFileSync } from 'fs';
 import { parse } from 'csv-parse/sync';
 import { v4 as uuidv4 } from 'uuid';
@@ -141,7 +142,7 @@ async function seedDatabase() {
 
     if (!existingPatient) {
       const patient = {
-        id: uuidv4(),
+        id: DEMO_PATIENT_ID,
         full_name: 'Juan Pérez',
         email: 'paciente@ejemplo.com',
       };
@@ -158,24 +159,24 @@ async function seedDatabase() {
     }
 
     // 6. Verificar conteos
-    const { data: medicationCount, error: countError } = await supabase
+    const { count: medicationCount } = await supabase
       .from('medications')
       .select('*', { count: 'exact', head: true });
 
-    const { data: categoryCount } = await supabase
+    const { count: categoryCount } = await supabase
       .from('categories')
       .select('*', { count: 'exact', head: true });
 
     console.log('\n📊 Resumen del seed:');
     console.log(`📈 Medicamentos insertados: ${insertedCount}`);
     console.log(`⏭️  Medicamentos existentes (skipped): ${skippedCount}`);
-    console.log(`🏷️  Categorías en base de datos: ${categoryCount?.count || 0}`);
-    console.log(`💊 Total medicamentos en BD: ${medicationCount?.count || 0}`);
+    console.log(`🏷️  Categorías en base de datos: ${categoryCount ?? 0}`);
+    console.log(`💊 Total medicamentos en BD: ${medicationCount ?? 0}`);
     
-    if (medicationCount?.count === 50) {
+    if (medicationCount === 50) {
       console.log('🎯 ¡Objetivo alcanzado! 50 medicamentos cargados correctamente.');
     } else {
-      console.log(`⚠️  Objetivo no alcanzado: ${medicationCount?.count || 0}/50 medicamentos`);
+      console.log(`⚠️  Objetivo no alcanzado: ${medicationCount ?? 0}/50 medicamentos`);
     }
 
   } catch (error) {

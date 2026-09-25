@@ -1,5 +1,6 @@
 -- DDL para Supabase (PostgreSQL) - Afirmative Pill E-Commerce Farmacéutico
 -- Sección 4.1 del planning.md
+-- Se aplica automáticamente con `supabase start` / `supabase db reset`.
 
 -- Tabla de categorías terapéuticas
 create table categories (

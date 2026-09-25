@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import ws from 'ws';
 
 dotenv.config();
 
@@ -20,12 +21,17 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   db: {
     schema: 'public',
   },
+  // supabase-js exige WebSocket nativo (Node 22+); con ws funciona desde Node 18
+  realtime: {
+    transport: ws as any,
+  },
 });
 
 // Cliente para operaciones de usuario (si se necesita)
 export const supabaseAnon = createClient(
   supabaseUrl,
-  process.env.SUPABASE_ANON_KEY || supabaseServiceKey
+  process.env.SUPABASE_ANON_KEY || supabaseServiceKey,
+  { realtime: { transport: ws as any } }
 );
 
 // Tipos para las tablas (se pueden generar automáticamente con Supabase CLI si se prefiere)

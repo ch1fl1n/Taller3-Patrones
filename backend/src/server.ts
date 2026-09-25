@@ -12,7 +12,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 
 // Importar context y resolvers
-import { createContext } from './context';
+import { createHttpContext, createWsContext } from './context';
 import { queryResolvers } from './resolvers/query.resolvers';
 import { mutationResolvers } from './resolvers/mutation.resolvers';
 import { subscriptionResolvers } from './resolvers/subscription.resolvers';
@@ -56,7 +56,7 @@ const wsServer = new WebSocketServer({
 const serverCleanup = useServer(
   {
     schema,
-    context: createContext,
+    context: createWsContext,
   },
   wsServer
 );
@@ -112,7 +112,7 @@ async function startServer() {
     app.use(
       '/graphql',
       expressMiddleware(server, {
-        context: createContext,
+        context: createHttpContext,
       })
     );
 

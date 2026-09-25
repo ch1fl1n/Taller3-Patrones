@@ -1,7 +1,7 @@
-import { CreateContextFn } from '@apollo/server';
 import { createCategoryLoader, createMedicationLoader, createPatientLoader, createOrderItemLoader } from './loaders/categoryLoader';
 import { supabase } from './datasources/supabaseClient';
 import { PubSub } from 'graphql-subscriptions';
+import { ApolloContext } from './types';
 
 // Crear instancia de PubSub para subscriptions
 export const pubsub = new PubSub();
@@ -10,107 +10,43 @@ export const pubsub = new PubSub();
 export const ORDER_STATUS_CHANGED = 'ORDER_STATUS_CHANGED';
 export const MEDICATION_STOCK_CHANGED = 'MEDICATION_STOCK_CHANGED';
 
-export interface Context {
-  user?: {
-    id: string;
-    email: string;
-  };
-  loaders: {
-    categoryLoader: ReturnType<typeof createCategoryLoader>;
-    medicationLoader: ReturnType<typeof createMedicationLoader>;
-    patientLoader: ReturnType<typeof createPatientLoader>;
-    orderItemLoader: ReturnType<typeof createOrderItemLoader>;
-  };
-  pubsub: PubSub;
-  supabase: typeof supabase;
-}
+// Paciente demo usado como usuario simulado (insertado por supabase/seed.sql)
+export const DEMO_PATIENT_ID = '00000000-0000-0000-0000-000000000001';
 
-// Función para crear el contexto por request
-export const createContext: CreateContextFn<Context> = async ({ req }) => {
-  try {
-    // En un entorno real, aquí se validaría el token JWT del header
-    // Para el taller, simulamos un usuario de ejemplo
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    let user: { id: string; email: string } | undefined;
-    
-    if (token) {
-      // Simulación de validación de token
-      // En producción usaríamos JWT o Supabase Auth
-      user = {
-        id: 'paciente-de-ejemplo-id',
-        email: 'paciente@ejemplo.com',
-      };
-    } else {
-      // Usuario anónimo (solo para desarrollo)
-      user = {
-        id: 'paciente-de-ejemplo-id',
-        email: 'paciente@ejemplo.com',
-      };
-    }
+// Header que simula el rol del usuario (la autenticación no es foco del taller).
+// Con "x-demo-role: admin" se puede ejecutar confirmOrder.
+const ROLE_HEADER = 'x-demo-role';
 
-    // Crear DataLoaders por request (evita fugas de caché entre usuarios)
-    const loaders = {
+type Headers = Record<string, unknown>;
+
+function buildContext(headers: Headers): ApolloContext {
+  // En producción aquí se validaría un JWT; para el taller todo request es el paciente demo
+  const role = headers[ROLE_HEADER] === 'admin' ? 'admin' : 'patient';
+
+  return {
+    user: {
+      id: DEMO_PATIENT_ID,
+      email: 'paciente@ejemplo.com',
+      role,
+    },
+    // DataLoaders por request (evita fugas de caché entre usuarios)
+    loaders: {
       categoryLoader: createCategoryLoader(),
       medicationLoader: createMedicationLoader(),
       patientLoader: createPatientLoader(),
       orderItemLoader: createOrderItemLoader(),
-    };
-
-    return {
-      user,
-      loaders,
-      pubsub,
-      supabase,
-    };
-  } catch (error) {
-    console.error('Error creating context:', error);
-    
-    // Retornar contexto mínimo incluso si hay error
-    return {
-      loaders: {
-        categoryLoader: createCategoryLoader(),
-        medicationLoader: createMedicationLoader(),
-        patientLoader: createPatientLoader(),
-        orderItemLoader: createOrderItemLoader(),
-      },
-      pubsub,
-      supabase,
-    };
-  }
-};
-
-// Función para validar si el usuario está autenticado
-export function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new Error('Authentication required');
-  }
-  return context.user;
+    },
+    pubsub,
+    supabase,
+  };
 }
 
-// Función para validar si el usuario es administrador
-export function requireAdmin(context: Context) {
-  const user = requireAuth(context);
-  // En producción, esto vendría de un claim del token JWT
-  const isAdmin = user.email === 'admin@afirmativepill.com';
-  
-  if (!isAdmin) {
-    throw new Error('Admin privileges required');
-  }
-  
-  return user;
+// Contexto para queries y mutations (HTTP)
+export async function createHttpContext({ req }: { req: { headers: Headers } }): Promise<ApolloContext> {
+  return buildContext(req.headers);
 }
 
-// Función para publicar eventos de cambio de estado de orden
-export async function publishOrderStatusChanged(order: any) {
-  await pubsub.publish(ORDER_STATUS_CHANGED, {
-    orderStatusChanged: order,
-  });
-}
-
-// Función para publicar eventos de cambio de stock
-export async function publishMedicationStockChanged(medication: any) {
-  await pubsub.publish(MEDICATION_STOCK_CHANGED, {
-    medicationStockChanged: medication,
-  });
+// Contexto para subscriptions (WebSocket): los "headers" viajan en connectionParams
+export async function createWsContext(ctx: { connectionParams?: Headers }): Promise<ApolloContext> {
+  return buildContext(ctx.connectionParams ?? {});
 }

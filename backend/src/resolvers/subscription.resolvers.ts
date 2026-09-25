@@ -1,5 +1,5 @@
-import { ApolloContext } from '../types';
-import { ORDER_STATUS_CHANGED, MEDICATION_STOCK_CHANGED } from '../context';
+import { ApolloContext, Medication, Order } from '../types';
+import { pubsub, ORDER_STATUS_CHANGED, MEDICATION_STOCK_CHANGED } from '../context';
 
 export const subscriptionResolvers = {
   Subscription: {
@@ -75,51 +75,21 @@ export const subscriptionResolvers = {
   },
 };
 
-// Función para publicar actualizaciones de estado de orden
-export async function publishOrderStatusUpdate(
-  orderId: string,
-  order: any,
-  context: ApolloContext
-) {
-  await context.pubsub.publish(`${ORDER_STATUS_CHANGED}_${orderId}`, {
-    orderStatusChanged: {
-      ...order,
-      // Asegurar que los campos estén en el formato correcto
-      id: order.id,
-      status: order.status,
-      total: order.total,
-      items: order.items || [],
-      patient: order.patient || null,
-      prescriptionEvidence: order.prescriptionEvidence || null,
-      createdAt: order.created_at || order.createdAt,
-      updatedAt: order.updated_at || order.updatedAt,
-    },
+// Función para publicar actualizaciones de estado de orden.
+// Usa el pubsub global para poder publicar también desde procesos asíncronos (orderWorkflow).
+export async function publishOrderStatusUpdate(order: Order) {
+  await pubsub.publish(`${ORDER_STATUS_CHANGED}_${order.id}`, {
+    orderStatusChanged: order,
   });
-  
-  console.log(`📢 Published order status update for order ${orderId}`);
+
+  console.log(`📢 Published order status update for order ${order.id} (${order.status})`);
 }
 
 // Función para publicar actualizaciones de stock
-export async function publishMedicationStockUpdate(
-  medicationId: string,
-  medication: any,
-  context: ApolloContext
-) {
-  await context.pubsub.publish(`${MEDICATION_STOCK_CHANGED}_${medicationId}`, {
-    medicationStockChanged: {
-      ...medication,
-      // Asegurar que los campos estén en el formato correcto
-      id: medication.id,
-      commercialName: medication.commercial_name || medication.commercialName,
-      activeIngredient: medication.active_ingredient || medication.activeIngredient,
-      price: medication.price,
-      stock: medication.stock,
-      requiresPrescription: medication.requires_prescription || medication.requiresPrescription,
-      indications: medication.indications,
-      contraindications: medication.contraindications,
-      createdAt: medication.created_at || medication.createdAt,
-    },
+export async function publishMedicationStockUpdate(medication: Medication) {
+  await pubsub.publish(`${MEDICATION_STOCK_CHANGED}_${medication.id}`, {
+    medicationStockChanged: medication,
   });
-  
-  console.log(`📢 Published stock update for medication ${medicationId}`);
+
+  console.log(`📢 Published stock update for medication ${medication.id}`);
 }

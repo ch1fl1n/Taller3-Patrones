@@ -1,245 +1,132 @@
-import { ApolloContext, CreateOrderInput, CreateOrderResult } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { ApolloContext, CreateOrderInput, CreateOrderResult, Medication } from '../types';
+import { DEMO_PATIENT_ID } from '../context';
+import { findOrderById, mapMedicationRow } from '../datasources/ordersRepository';
+import { isValidDocumentUrl } from '../domain/prescription';
+import { scheduleApproval, schedulePrescriptionReview } from '../domain/orderWorkflow';
 import { publishOrderStatusUpdate, publishMedicationStockUpdate } from '../resolvers/subscription.resolvers';
+import { insufficientStockError, parseCommandError, validationError } from './errors';
 
 export async function createOrder(
   input: CreateOrderInput,
   context: ApolloContext
 ): Promise<CreateOrderResult> {
   const { items } = input;
-  
-  try {
-    // Validaciones básicas
-    if (!items || items.length === 0) {
-      return {
-        __typename: 'ValidationError',
-        message: 'Order must contain at least one item',
-        code: 'VALIDATION_ERROR',
-        field: 'items',
-      };
+  const documentUrl = input.prescriptionEvidence?.documentUrl?.trim() || null;
+
+  // 1. Validaciones de entrada
+  if (!items || items.length === 0) {
+    return validationError('Order must contain at least one item', 'items');
+  }
+  if (items.some(item => !Number.isInteger(item.quantity) || item.quantity <= 0)) {
+    return validationError('Quantity must be a positive integer', 'items.quantity');
+  }
+  if (documentUrl !== null && !isValidDocumentUrl(documentUrl)) {
+    return validationError(
+      'Prescription evidence must be an http(s) link to the document',
+      'prescriptionEvidence.documentUrl'
+    );
+  }
+
+  const userId = context.user?.id || DEMO_PATIENT_ID;
+
+  // Agrupar ítems repetidos del mismo medicamento
+  const quantities = new Map<string, number>();
+  for (const item of items) {
+    quantities.set(item.medicationId, (quantities.get(item.medicationId) ?? 0) + item.quantity);
+  }
+  const medicationIds = [...quantities.keys()];
+
+  // 2. Estado actual de los medicamentos (write model: se lee la tabla, no la proyección)
+  const { data: rows, error: medError } = await context.supabase
+    .from('medications')
+    .select('*')
+    .in('id', medicationIds);
+
+  if (medError) {
+    throw new Error(`Failed to validate order items: ${medError.message}`);
+  }
+
+  const medications = new Map<string, Medication>(
+    (rows || []).map(row => [row.id, mapMedicationRow(row)])
+  );
+  const missingIds = medicationIds.filter(id => !medications.has(id));
+  if (missingIds.length > 0) {
+    return validationError(`Medications not found: ${missingIds.join(', ')}`, 'items.medicationId');
+  }
+
+  // 3. Invariante 2: stock suficiente. Esta verificación da un error rico al cliente;
+  //    la función SQL la repite con la fila bloqueada para cubrir compras concurrentes.
+  for (const [medicationId, quantity] of quantities) {
+    const medication = medications.get(medicationId)!;
+    if (medication.stock < quantity) {
+      return insufficientStockError(medication, quantity);
     }
+  }
 
-    // Obtener usuario actual (simulado para el taller)
-    const userId = context.user?.id || 'paciente-de-ejemplo-id';
-    
-    // 1. Verificar stock y obtener información de medicamentos
-    const medicationIds = items.map(item => item.medicationId);
-    const { data: medications, error: medError } = await context.supabase
-      .from('medications')
-      .select('*')
-      .in('id', medicationIds);
-
-    if (medError) {
-      console.error('Error fetching medications:', medError);
-      throw new Error('Failed to validate order items');
-    }
-
-    if (!medications || medications.length !== items.length) {
-      return {
-        __typename: 'ValidationError',
-        message: 'One or more medications not found',
-        code: 'VALIDATION_ERROR',
-        field: 'items',
-      };
-    }
-
-    // Crear mapa de medicamentos por ID
-    const medicationMap = new Map(medications.map(m => [m.id, m]));
-
-    // 2. Validar stock disponible
-    const insufficientStockItems = items.filter(item => {
-      const medication = medicationMap.get(item.medicationId);
-      return medication && medication.stock < item.quantity;
-    });
-
-    if (insufficientStockItems.length > 0) {
-      const firstItem = insufficientStockItems[0];
-      const medication = medicationMap.get(firstItem.medicationId)!;
-      
-      return {
-        __typename: 'InsufficientStockError',
-        message: `Insufficient stock for ${medication.commercial_name}`,
-        code: 'INSUFFICIENT_STOCK',
-        medicationId: firstItem.medicationId,
-        medicationName: medication.commercial_name,
-        availableStock: medication.stock,
-        requestedQuantity: firstItem.quantity,
-      };
-    }
-
-    // 3. Verificar si se requiere prescripción médica
-    const prescriptionRequiredItems = items.filter(item => {
-      const medication = medicationMap.get(item.medicationId);
-      return medication && medication.requires_prescription;
-    });
-
-    if (prescriptionRequiredItems.length > 0) {
-      return {
-        __typename: 'PrescriptionRequiredError',
-        message: 'Prescription required for one or more medications',
-        code: 'PRESCRIPTION_REQUIRED',
-        medicationIds: prescriptionRequiredItems.map(item => item.medicationId),
-        medicationNames: prescriptionRequiredItems.map(item => {
-          const medication = medicationMap.get(item.medicationId)!;
-          return medication.commercial_name;
-        }),
-      };
-    }
-
-    // 4. Iniciar transacción para crear orden
-    const orderId = uuidv4();
-    let total = 0;
-    const orderItems = [];
-
-    // Usar transacción para garantizar atomicidad
-    const { data: order, error: orderError } = await context.supabase
-      .from('orders')
-      .insert({
-        id: orderId,
-        patient_id: userId,
-        status: 'PENDING_APPROVAL',
-        total: 0, // Se actualizará después
-      })
-      .select()
-      .single();
-
-    if (orderError) {
-      console.error('Error creating order:', orderError);
-      throw new Error('Failed to create order');
-    }
-
-    // 5. Crear items de orden y actualizar stock
-    for (const item of items) {
-      const medication = medicationMap.get(item.medicationId)!;
-      const itemId = uuidv4();
-      const unitPrice = medication.price;
-      const subtotal = unitPrice * item.quantity;
-      
-      total += subtotal;
-
-      // Insertar item de orden
-      const { error: itemError } = await context.supabase
-        .from('order_items')
-        .insert({
-          id: itemId,
-          order_id: orderId,
-          medication_id: item.medicationId,
-          quantity: item.quantity,
-          unit_price: unitPrice,
-        });
-
-      if (itemError) {
-        console.error('Error creating order item:', itemError);
-        throw new Error('Failed to create order items');
-      }
-
-      // Decrementar stock usando función PostgreSQL atómica
-      const { data: stockResult, error: stockError } = await context.supabase.rpc(
-        'decrement_stock',
-        {
-          p_medication_id: item.medicationId,
-          p_quantity: item.quantity,
-        }
-      );
-
-      if (stockError || !stockResult) {
-        console.error('Error decrementing stock:', stockError);
-        throw new Error('Failed to update medication stock');
-      }
-
-      orderItems.push({
-        id: itemId,
-        medicationId: item.medicationId,
-        quantity: item.quantity,
-        unitPrice,
-        subtotal,
-      });
-
-      // Publicar actualización de stock via subscription
-      const updatedMedication = {
-        ...medication,
-        stock: medication.stock - item.quantity,
-      };
-      
-      await publishMedicationStockUpdate(item.medicationId, updatedMedication, context);
-    }
-
-    // 6. Actualizar total de la orden
-    const { error: updateError } = await context.supabase
-      .from('orders')
-      .update({ total })
-      .eq('id', orderId);
-
-    if (updateError) {
-      console.error('Error updating order total:', updateError);
-      throw new Error('Failed to update order total');
-    }
-
-    // 7. Obtener orden completa con relaciones
-    const { data: completeOrder, error: fetchError } = await context.supabase
-      .from('orders')
-      .select(`
-        *,
-        order_items (
-          *,
-          medications (*)
-        )
-      `)
-      .eq('id', orderId)
-      .single();
-
-    if (fetchError) {
-      console.error('Error fetching complete order:', fetchError);
-      throw new Error('Failed to fetch created order');
-    }
-
-    // 8. Transformar respuesta
-    const transformedOrder = {
-      id: completeOrder.id,
-      status: completeOrder.status,
-      total: completeOrder.total,
-      createdAt: completeOrder.created_at,
-      updatedAt: completeOrder.updated_at,
-      items: completeOrder.order_items.map((item: any) => ({
-        id: item.id,
-        medication: {
-          id: item.medications.id,
-          commercialName: item.medications.commercial_name,
-          activeIngredient: item.medications.active_ingredient,
-          laboratory: item.medications.laboratory,
-          presentation: item.medications.presentation,
-          price: item.medications.price,
-          stock: item.medications.stock - item.quantity, // Stock actualizado
-          requiresPrescription: item.medications.requires_prescription,
-          indications: item.medications.indications,
-          contraindications: item.medications.contraindications,
-          createdAt: item.medications.created_at,
-        },
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-        subtotal: item.quantity * item.unit_price,
-        createdAt: item.created_at,
-      })),
-    };
-
-    // 9. Publicar evento de creación de orden
-    await publishOrderStatusUpdate(orderId, transformedOrder, context);
-
-    console.log(`✅ Order ${orderId} created successfully`);
-    
+  // 4. Invariante 1: los medicamentos formulados exigen evidencia de fórmula médica
+  const prescribed = [...medications.values()].filter(m => m.requiresPrescription);
+  if (prescribed.length > 0 && !documentUrl) {
     return {
-      __typename: 'CreateOrderSuccess',
-      order: transformedOrder,
-    };
-
-  } catch (error) {
-    console.error('Unexpected error in createOrder command:', error);
-    
-    // En caso de error, intentar revertir
-    return {
-      __typename: 'ValidationError',
-      message: 'An unexpected error occurred while creating the order',
-      code: 'INTERNAL_ERROR',
+      __typename: 'PrescriptionRequiredError',
+      message: 'Prescription evidence is required for one or more medications',
+      code: 'PRESCRIPTION_REQUIRED',
+      medicationIds: prescribed.map(m => m.id),
+      medicationNames: prescribed.map(m => m.commercialName),
     };
   }
+
+  // 5. Comando atómico: orden + ítems + descuento de stock + evidencia en una sola transacción
+  const { data: orderId, error: rpcError } = await context.supabase.rpc('create_order', {
+    p_patient_id: userId,
+    p_items: medicationIds.map(id => ({ medication_id: id, quantity: quantities.get(id) })),
+    p_document_url: documentUrl,
+  });
+
+  if (rpcError) {
+    const { code, detail } = parseCommandError(rpcError.message);
+
+    // Otro pedido se llevó el stock entre la verificación y el bloqueo
+    if (code === 'INSUFFICIENT_STOCK' && detail) {
+      const { data: fresh } = await context.supabase
+        .from('medications')
+        .select('*')
+        .eq('id', detail)
+        .single();
+      if (fresh) {
+        return insufficientStockError(mapMedicationRow(fresh), quantities.get(detail) ?? 0);
+      }
+    }
+
+    throw new Error(`Failed to create order: ${rpcError.message}`);
+  }
+
+  const order = await findOrderById(orderId as string);
+  if (!order) {
+    throw new Error(`Order ${orderId} was created but could not be read back`);
+  }
+
+  // 6. Publicar eventos y arrancar el procesamiento asíncrono
+  await publishOrderStatusUpdate(order);
+  for (const item of order.items) {
+    if (item.medication) {
+      await publishMedicationStockUpdate(item.medication);
+    }
+  }
+
+  if (order.prescriptionEvidence) {
+    schedulePrescriptionReview(
+      order.id,
+      order.prescriptionEvidence.id,
+      order.prescriptionEvidence.documentUrl
+    );
+  } else {
+    scheduleApproval(order.id);
+  }
+
+  console.log(`✅ Order ${order.id} created (${order.status})`);
+
+  return {
+    __typename: 'CreateOrderSuccess',
+    order,
+  };
 }

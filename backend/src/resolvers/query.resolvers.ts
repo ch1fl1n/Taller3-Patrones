@@ -1,4 +1,5 @@
 import { ApolloContext } from '../types';
+import { DEMO_PATIENT_ID } from '../context';
 import { getMedications, getMedicationById, getCategories } from '../queries/getMedications.query';
 import { getOrderProjection } from '../queries/getOrderProjection.query';
 
@@ -20,7 +21,7 @@ export const queryResolvers = {
 
         // Mapear categorías a un diccionario
         const categoryMap = new Map<string, any>();
-        categories.forEach((category, index) => {
+        categories.forEach((category: any, index: number) => {
           if (category) {
             categoryMap.set(categoryIds[index], category);
           }
@@ -118,7 +119,7 @@ export const queryResolvers = {
     myOrders: async (_: any, __: any, context: ApolloContext) => {
       try {
         // En un entorno real, esto usaría el ID del usuario autenticado
-        const userId = context.user?.id || 'paciente-de-ejemplo-id';
+        const userId = context.user?.id || DEMO_PATIENT_ID;
         
         // Consultar órdenes del paciente
         const { data: orders, error } = await context.supabase
@@ -186,7 +187,7 @@ export const queryResolvers = {
     me: async (_: any, __: any, context: ApolloContext) => {
       try {
         // En un entorno real, esto vendría del token JWT
-        const userId = context.user?.id || 'paciente-de-ejemplo-id';
+        const userId = context.user?.id || DEMO_PATIENT_ID;
         
         const patient = await context.loaders.patientLoader.load(userId);
         

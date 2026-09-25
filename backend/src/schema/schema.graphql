@@ -8,6 +8,12 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PrescriptionValidationStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
 type Category {
   id: UUID!
   name: String!
@@ -96,7 +102,7 @@ type Patient {
 type PrescriptionEvidence {
   id: UUID!
   documentUrl: String!
-  validationStatus: String!
+  validationStatus: PrescriptionValidationStatus!
   validatedAt: DateTime
   createdAt: DateTime!
 }
@@ -130,9 +136,12 @@ input OrderItemInput {
 
 input CreateOrderInput {
   items: [OrderItemInput!]!
+  # Obligatoria si algún medicamento requiere fórmula médica
+  prescriptionEvidence: PrescriptionEvidenceInput
 }
 
 input PrescriptionEvidenceInput {
+  # Enlace http(s) al documento de la fórmula
   documentUrl: String!
 }
 
@@ -200,7 +209,7 @@ type CancelOrderSuccess {
 }
 
 union CreateOrderResult = CreateOrderSuccess | ValidationError | InsufficientStockError | PrescriptionRequiredError
-union SubmitPrescriptionResult = SubmitPrescriptionSuccess | ValidationError | OrderNotFoundError
+union SubmitPrescriptionResult = SubmitPrescriptionSuccess | ValidationError | OrderNotFoundError | InvalidOrderStatusError
 union ConfirmOrderResult = ConfirmOrderSuccess | ValidationError | OrderNotFoundError | InvalidOrderStatusError
 union CancelOrderResult = CancelOrderSuccess | ValidationError | OrderNotFoundError | InvalidOrderStatusError
 
@@ -209,10 +218,10 @@ type Mutation {
   # Crear una nueva orden
   createOrder(input: CreateOrderInput!): CreateOrderResult!
   
-  # Enviar evidencia de prescripción médica
+  # Reenviar evidencia de fórmula médica (p. ej. tras un rechazo)
   submitPrescriptionEvidence(input: SubmitPrescriptionInput!): SubmitPrescriptionResult!
   
-  # Confirmar orden (admin/sistema)
+  # Despachar orden aprobada (admin: header x-demo-role: admin)
   confirmOrder(orderId: UUID!): ConfirmOrderResult!
   
   # Cancelar orden

@@ -1,4 +1,6 @@
 // Tipos para el schema GraphQL
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { PubSub } from 'graphql-subscriptions';
 
 export interface MedicationFilterInput {
   search?: string;
@@ -17,12 +19,14 @@ export interface OrderItemInput {
   quantity: number;
 }
 
-export interface CreateOrderInput {
-  items: OrderItemInput[];
-}
-
 export interface PrescriptionEvidenceInput {
   documentUrl: string;
+}
+
+export interface CreateOrderInput {
+  items: OrderItemInput[];
+  // Obligatoria si algún ítem requiere fórmula médica
+  prescriptionEvidence?: PrescriptionEvidenceInput | null;
 }
 
 export interface SubmitPrescriptionInput {
@@ -37,10 +41,12 @@ export interface MutationError {
 }
 
 export interface ValidationError extends MutationError {
+  __typename: 'ValidationError';
   field?: string;
 }
 
 export interface InsufficientStockError extends MutationError {
+  __typename: 'InsufficientStockError';
   medicationId: string;
   medicationName: string;
   availableStock: number;
@@ -48,62 +54,72 @@ export interface InsufficientStockError extends MutationError {
 }
 
 export interface PrescriptionRequiredError extends MutationError {
+  __typename: 'PrescriptionRequiredError';
   medicationIds: string[];
   medicationNames: string[];
 }
 
 export interface OrderNotFoundError extends MutationError {
+  __typename: 'OrderNotFoundError';
   orderId: string;
 }
 
 export interface InvalidOrderStatusError extends MutationError {
+  __typename: 'InvalidOrderStatusError';
   currentStatus: OrderStatus;
   attemptedStatus: OrderStatus;
 }
 
 // Tipos de éxito
 export interface CreateOrderSuccess {
+  __typename: 'CreateOrderSuccess';
   order: Order;
 }
 
 export interface SubmitPrescriptionSuccess {
+  __typename: 'SubmitPrescriptionSuccess';
   order: Order;
 }
 
 export interface ConfirmOrderSuccess {
+  __typename: 'ConfirmOrderSuccess';
   order: Order;
 }
 
 export interface CancelOrderSuccess {
+  __typename: 'CancelOrderSuccess';
   order: Order;
 }
 
 // Unions
-export type CreateOrderResult = 
-  | CreateOrderSuccess 
-  | ValidationError 
-  | InsufficientStockError 
+export type CreateOrderResult =
+  | CreateOrderSuccess
+  | ValidationError
+  | InsufficientStockError
   | PrescriptionRequiredError;
 
-export type SubmitPrescriptionResult = 
-  | SubmitPrescriptionSuccess 
-  | ValidationError 
-  | OrderNotFoundError;
-
-export type ConfirmOrderResult = 
-  | ConfirmOrderSuccess 
-  | ValidationError 
-  | OrderNotFoundError 
+export type SubmitPrescriptionResult =
+  | SubmitPrescriptionSuccess
+  | ValidationError
+  | OrderNotFoundError
   | InvalidOrderStatusError;
 
-export type CancelOrderResult = 
-  | CancelOrderSuccess 
-  | ValidationError 
-  | OrderNotFoundError 
+export type ConfirmOrderResult =
+  | ConfirmOrderSuccess
+  | ValidationError
+  | OrderNotFoundError
+  | InvalidOrderStatusError;
+
+export type CancelOrderResult =
+  | CancelOrderSuccess
+  | ValidationError
+  | OrderNotFoundError
   | InvalidOrderStatusError;
 
 // Tipos de dominio
 export type OrderStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'DISPATCHED' | 'CANCELLED';
+
+export type PrescriptionValidationStatus = 'PENDING' | 'VALIDATED' | 'REJECTED';
 
 export interface Category {
   id: string;
@@ -150,6 +166,7 @@ export interface OrderItem {
   medicationId: string;
   quantity: number;
   unitPrice: number;
+  subtotal: number;
   createdAt: string;
   medication?: Medication;
 }
@@ -157,10 +174,11 @@ export interface OrderItem {
 export interface Order {
   id: string;
   patientId: string;
+  patient?: Patient;
   status: OrderStatus;
   total: number;
   items: OrderItem[];
-  prescriptionEvidence?: PrescriptionEvidence;
+  prescriptionEvidence?: PrescriptionEvidence | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -169,7 +187,7 @@ export interface PrescriptionEvidence {
   id: string;
   orderId: string;
   documentUrl: string;
-  validationStatus: 'PENDING' | 'VALIDATED' | 'REJECTED';
+  validationStatus: PrescriptionValidationStatus;
   validatedAt: string | null;
   createdAt: string;
 }
@@ -179,6 +197,7 @@ export interface ApolloContext {
   user?: {
     id: string;
     email: string;
+    role: 'patient' | 'admin';
   };
   loaders: {
     categoryLoader: any;
@@ -186,5 +205,6 @@ export interface ApolloContext {
     patientLoader: any;
     orderItemLoader: any;
   };
-  pubsub: any;
+  pubsub: PubSub;
+  supabase: SupabaseClient;
 }

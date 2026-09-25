@@ -4,6 +4,10 @@ import { submitPrescriptionEvidence } from '../commands/submitPrescriptionEviden
 import { confirmOrder } from '../commands/confirmOrder.command';
 import { cancelOrder } from '../commands/cancelOrder.command';
 
+function resolveByTypename(obj: { __typename: string }) {
+  return obj.__typename;
+}
+
 export const mutationResolvers = {
   Mutation: {
     // Crear una nueva orden
@@ -88,54 +92,10 @@ export const mutationResolvers = {
     },
   },
 
-  // Resolvers de tipos para unions
-  CreateOrderResult: {
-    __resolveType(obj: any) {
-      if (obj.order) return 'CreateOrderSuccess';
-      if (obj.medicationId) return 'InsufficientStockError';
-      if (obj.medicationIds) return 'PrescriptionRequiredError';
-      if (obj.field || obj.code === 'VALIDATION_ERROR') return 'ValidationError';
-      return null;
-    },
-  },
-
-  SubmitPrescriptionResult: {
-    __resolveType(obj: any) {
-      if (obj.order) return 'SubmitPrescriptionSuccess';
-      if (obj.orderId) return 'OrderNotFoundError';
-      if (obj.field || obj.code === 'VALIDATION_ERROR') return 'ValidationError';
-      return null;
-    },
-  },
-
-  ConfirmOrderResult: {
-    __resolveType(obj: any) {
-      if (obj.order) return 'ConfirmOrderSuccess';
-      if (obj.orderId) return 'OrderNotFoundError';
-      if (obj.currentStatus) return 'InvalidOrderStatusError';
-      if (obj.field || obj.code === 'VALIDATION_ERROR') return 'ValidationError';
-      return null;
-    },
-  },
-
-  CancelOrderResult: {
-    __resolveType(obj: any) {
-      if (obj.order) return 'CancelOrderSuccess';
-      if (obj.orderId) return 'OrderNotFoundError';
-      if (obj.currentStatus) return 'InvalidOrderStatusError';
-      if (obj.field || obj.code === 'VALIDATION_ERROR') return 'ValidationError';
-      return null;
-    },
-  },
-
-  MutationError: {
-    __resolveType(obj: any) {
-      if (obj.medicationId) return 'InsufficientStockError';
-      if (obj.medicationIds) return 'PrescriptionRequiredError';
-      if (obj.orderId) return 'OrderNotFoundError';
-      if (obj.currentStatus) return 'InvalidOrderStatusError';
-      if (obj.field) return 'ValidationError';
-      return 'ValidationError';
-    },
-  },
+  // Resolvers de tipos para unions/interface: los comandos devuelven siempre __typename
+  CreateOrderResult: { __resolveType: resolveByTypename },
+  SubmitPrescriptionResult: { __resolveType: resolveByTypename },
+  ConfirmOrderResult: { __resolveType: resolveByTypename },
+  CancelOrderResult: { __resolveType: resolveByTypename },
+  MutationError: { __resolveType: resolveByTypename },
 };
