@@ -7,24 +7,18 @@ import { getMainDefinition } from '@apollo/client/utilities';
 const GRAPHQL_ENDPOINT = 'http://localhost:4000/graphql';
 const WS_ENDPOINT = 'ws://localhost:4000/graphql';
 
+// Sin autenticación: el backend trata cada request como el paciente demo (ver backend/src/context.ts)
+
 // Link HTTP para queries y mutations
 const httpLink = new HttpLink({
   uri: GRAPHQL_ENDPOINT,
-  headers: {
-    // En producción, aquí iría el token JWT de autenticación
-    'Authorization': 'Bearer ejemplo-token',
-  },
 });
 
 // Link WebSocket para subscriptions
-const wsLink = typeof window !== 'undefined' 
+const wsLink = typeof window !== 'undefined'
   ? new GraphQLWsLink(
       createClient({
         url: WS_ENDPOINT,
-        connectionParams: {
-          // En producción, aquí irían los parámetros de autenticación
-          authToken: 'ejemplo-token',
-        },
       })
     )
   : null;
@@ -94,16 +88,6 @@ export const client = new ApolloClient({
     },
   },
 });
-
-// Función auxiliar para crear headers de autenticación
-export function getAuthHeaders() {
-  // En producción, obtendríamos el token del almacenamiento local
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('auth_token') 
-    : null;
-  
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 // Función para actualizar caché después de mutaciones
 export function updateCacheAfterMutation<T>(cache: InMemoryCache, query: any, newData: T) {

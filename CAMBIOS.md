@@ -62,6 +62,12 @@ supabase/
 - Se agregó `frontend/tsconfig.json`, con el alias `@/*`.
 - `backend/src/datasources/supabaseClient.ts` le pasa `ws` como transporte a `supabase-js`, así el backend funciona desde Node 18.
 
+### Autenticación: se descartó JWT
+
+El proyecto declaraba `JWT_SECRET` y el frontend enviaba un token fijo (`Bearer ejemplo-token`), pero **nada los usaba**: el backend no leía el secreto ni validaba el token. Para no aparentar una autenticación que no existe, se eliminaron `JWT_SECRET` de `.env` y `.env.example`, el token del frontend y el helper `getAuthHeaders()`, que no tenía uso.
+
+**Decisión:** la autenticación no se evalúa en el taller (ver `planning.md`, sección 12). Cada request se trata como el paciente demo, y el rol de admin se simula con el header `x-demo-role: admin`.
+
 ---
 
 ## 3. Nuevo flujo de órdenes (CQRS y dominio)

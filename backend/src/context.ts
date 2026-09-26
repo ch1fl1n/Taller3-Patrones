@@ -20,7 +20,7 @@ const ROLE_HEADER = 'x-demo-role';
 type Headers = Record<string, unknown>;
 
 function buildContext(headers: Headers): ApolloContext {
-  // En producción aquí se validaría un JWT; para el taller todo request es el paciente demo
+  // Sin autenticación (decisión del taller): todo request es el paciente demo
   const role = headers[ROLE_HEADER] === 'admin' ? 'admin' : 'patient';
 
   return {

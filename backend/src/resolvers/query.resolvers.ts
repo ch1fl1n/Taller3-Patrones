@@ -186,7 +186,7 @@ export const queryResolvers = {
     // Información del usuario actual (simulado)
     me: async (_: any, __: any, context: ApolloContext) => {
       try {
-        // En un entorno real, esto vendría del token JWT
+        // Sin autenticación: el usuario actual es siempre el paciente demo
         const userId = context.user?.id || DEMO_PATIENT_ID;
         
         const patient = await context.loaders.patientLoader.load(userId);
