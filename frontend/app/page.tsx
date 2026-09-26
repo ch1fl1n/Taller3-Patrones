@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@apollo/client';
-import { GET_MEDICATIONS } from '@/graphql/queries';
+import { GET_CATEGORIES, GET_MEDICATIONS } from '@/graphql/queries';
 import { Pill, Shield, Truck, Clock, Search, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { MedicationCard } from '@/components/MedicationCard';
@@ -25,25 +25,22 @@ interface Medication {
 export default function HomePage() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  // Filtro aplicado: la consulta solo cambia al pulsar "Buscar", no con cada tecla
+  const [appliedFilter, setAppliedFilter] = useState({ search: '', categoryId: '' });
 
   const { data, loading, error, refetch } = useQuery(GET_MEDICATIONS, {
     variables: {
       filter: {
-        search: search || undefined,
-        categoryId: categoryFilter || undefined,
+        search: appliedFilter.search || undefined,
+        categoryId: appliedFilter.categoryId || undefined,
         limit: 12,
       },
     },
   });
+  const { data: categoriesData } = useQuery<{ categories: { id: string; name: string }[] }>(GET_CATEGORIES);
 
   const handleSearch = () => {
-    refetch({
-      filter: {
-        search: search || undefined,
-        categoryId: categoryFilter || undefined,
-        limit: 12,
-      },
-    });
+    setAppliedFilter({ search: search.trim(), categoryId: categoryFilter });
   };
 
   return (
@@ -130,10 +127,11 @@ export default function HomePage() {
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
                 <option value="">Todas las categorías</option>
-                <option value="analgesicos">Analgésicos</option>
-                <option value="antibioticos">Antibióticos</option>
-                <option value="antihipertensivos">Antihipertensivos</option>
-                <option value="antidiabeticos">Antidiabéticos</option>
+                {categoriesData?.categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -153,7 +151,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {loading ? (
+          {loading && !data ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
               <p className="mt-4 text-secondary-600">Cargando medicamentos...</p>
@@ -189,9 +187,6 @@ export default function HomePage() {
         <div className="flex flex-col md:flex-row gap-4 justify-center">
           <Link href="/prescription-info" className="btn-primary">
             Cómo enviar tu receta
-          </Link>
-          <Link href="/faq" className="btn-secondary">
-            Preguntas frecuentes
           </Link>
         </div>
       </section>

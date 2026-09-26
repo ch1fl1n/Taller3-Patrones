@@ -1,27 +1,15 @@
 import { gql } from '@apollo/client';
+import { ORDER_SUMMARY_FIELDS } from './fragments';
 
 // Mutation para crear una orden
 export const CREATE_ORDER = gql`
+  ${ORDER_SUMMARY_FIELDS}
   mutation CreateOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
       __typename
       ... on CreateOrderSuccess {
         order {
-          id
-          status
-          total
-          createdAt
-          items {
-            id
-            quantity
-            unitPrice
-            subtotal
-            medication {
-              id
-              commercialName
-              price
-            }
-          }
+          ...OrderSummaryFields
         }
       }
       ... on InsufficientStockError {
@@ -47,7 +35,7 @@ export const CREATE_ORDER = gql`
   }
 `;
 
-// Mutation para enviar evidencia de prescripción
+// Mutation para reenviar evidencia de prescripción (p. ej. tras un rechazo)
 export const SUBMIT_PRESCRIPTION_EVIDENCE = gql`
   mutation SubmitPrescriptionEvidence($input: SubmitPrescriptionInput!) {
     submitPrescriptionEvidence(input: $input) {
@@ -56,8 +44,12 @@ export const SUBMIT_PRESCRIPTION_EVIDENCE = gql`
         order {
           id
           status
+          updatedAt
           prescriptionEvidence {
+            id
+            documentUrl
             validationStatus
+            validatedAt
           }
         }
       }
@@ -65,6 +57,12 @@ export const SUBMIT_PRESCRIPTION_EVIDENCE = gql`
         message
         code
         orderId
+      }
+      ... on InvalidOrderStatusError {
+        message
+        code
+        currentStatus
+        attemptedStatus
       }
       ... on ValidationError {
         message
@@ -116,6 +114,14 @@ export const CANCEL_ORDER = gql`
         order {
           id
           status
+          updatedAt
+          items {
+            id
+            medication {
+              id
+              stock
+            }
+          }
         }
       }
       ... on InvalidOrderStatusError {

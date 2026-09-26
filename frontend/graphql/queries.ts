@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client';
+import { ORDER_SUMMARY_FIELDS } from './fragments';
 
 // Query para obtener medicamentos con filtros
 export const GET_MEDICATIONS = gql`
@@ -52,7 +53,7 @@ export const GET_MEDICATION_DETAILS = gql`
   }
 `;
 
-// Query para obtener una orden específica
+// Query para obtener una orden específica (proyección de lectura)
 export const GET_ORDER = gql`
   query GetOrder($id: UUID!) {
     order(id: $id) {
@@ -74,6 +75,7 @@ export const GET_ORDER = gql`
         medication {
           id
           commercialName
+          presentation
           price
           requiresPrescription
         }
@@ -90,23 +92,10 @@ export const GET_ORDER = gql`
 
 // Query para obtener órdenes del usuario actual
 export const GET_MY_ORDERS = gql`
+  ${ORDER_SUMMARY_FIELDS}
   query GetMyOrders {
     myOrders {
-      id
-      status
-      total
-      createdAt
-      items {
-        id
-        quantity
-        unitPrice
-        subtotal
-        medication {
-          id
-          commercialName
-          price
-        }
-      }
+      ...OrderSummaryFields
     }
   }
 `;

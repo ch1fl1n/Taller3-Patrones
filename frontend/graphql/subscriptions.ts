@@ -1,23 +1,19 @@
 import { gql } from '@apollo/client';
 
-// Subscription para seguir cambios de estado de una orden
+// Subscription para seguir cambios de estado de una orden.
+// Order y PrescriptionEvidence están normalizados por id, así que cada evento
+// actualiza la caché y todas las vistas que muestran la orden se refrescan solas.
 export const ORDER_STATUS_CHANGED = gql`
   subscription OrderStatusChanged($orderId: UUID!) {
     orderStatusChanged(orderId: $orderId) {
       id
       status
-      total
       updatedAt
-      items {
+      prescriptionEvidence {
         id
-        quantity
-        unitPrice
-        subtotal
-        medication {
-          id
-          commercialName
-          price
-        }
+        documentUrl
+        validationStatus
+        validatedAt
       }
     }
   }

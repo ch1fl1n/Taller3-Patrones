@@ -8,37 +8,16 @@ export const queryResolvers = {
     // Catálogo de medicamentos con filtros
     medications: async (_: any, { filter }: { filter?: any }, context: ApolloContext) => {
       try {
+        // La categoría NO se carga aquí: la resuelve el field resolver MedicationSummary.category
+        // solo si el cliente la pide, y el DataLoader agrupa todos los ids en una sola consulta.
         const result = await getMedications({ filter });
-        
-        // Obtener categorías para cada medicamento usando DataLoader
-        const categoryIds = result.items
-          .map(item => item.categoryId)
-          .filter((id): id is string => id !== null);
-        
-        const categories = categoryIds.length > 0
-          ? await context.loaders.categoryLoader.loadMany(categoryIds)
-          : [];
-
-        // Mapear categorías a un diccionario
-        const categoryMap = new Map<string, any>();
-        categories.forEach((category: any, index: number) => {
-          if (category) {
-            categoryMap.set(categoryIds[index], category);
-          }
-        });
-
-        // Construir items con categorías
-        const itemsWithCategory = result.items.map(item => ({
-          ...item,
-          category: item.categoryId ? categoryMap.get(item.categoryId) : null,
-        }));
 
         // Calcular información de paginación
         const currentPage = Math.floor((filter?.offset || 0) / (filter?.limit || 20)) + 1;
         const totalPages = Math.ceil(result.totalCount / (filter?.limit || 20));
 
         return {
-          items: itemsWithCategory,
+          items: result.items,
           totalCount: result.totalCount,
           pageInfo: {
             hasNextPage: currentPage < totalPages,
@@ -54,23 +33,12 @@ export const queryResolvers = {
     },
 
     // Ficha detallada de medicamento
-    medication: async (_: any, { id }: { id: string }, context: ApolloContext) => {
+    medication: async (_: any, { id }: { id: string }) => {
       try {
         const medication = await getMedicationById(id);
         
-        if (!medication) {
-          return null;
-        }
-
-        // Obtener categoría usando DataLoader
-        const category = medication.categoryId
-          ? await context.loaders.categoryLoader.load(medication.categoryId)
-          : null;
-
-        return {
-          ...medication,
-          category,
-        };
+        // La categoría la resuelve el field resolver Medication.category (DataLoader)
+        return medication;
       } catch (error) {
         console.error(`Error fetching medication ${id}:`, error);
         return null;

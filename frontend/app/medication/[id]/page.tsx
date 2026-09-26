@@ -1,29 +1,28 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import { GET_MEDICATION_DETAILS } from '@/graphql/queries';
 import { Pill, AlertCircle, CheckCircle, Truck, Shield, Clock } from 'lucide-react';
 import { useState } from 'react';
+import { useCart } from '@/components/CartProvider';
+import { formatPrice } from '@/lib/format';
 
 export default function MedicationDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const medicationId = params.id as string;
+  const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [justAdded, setJustAdded] = useState(false);
 
   const { data, loading, error } = useQuery(GET_MEDICATION_DETAILS, {
     variables: { id: medicationId },
     skip: !medicationId,
   });
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-    }).format(price);
-  };
-
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-8">
@@ -49,22 +48,47 @@ export default function MedicationDetailsPage() {
         <p className="text-secondary-600 mb-6">
           El medicamento que buscas no existe o no está disponible.
         </p>
-        <a href="/catalog" className="btn-primary">
+        <Link href="/catalog" className="btn-primary">
           Volver al catálogo
-        </a>
+        </Link>
       </div>
     );
   }
 
   const medication = data.medication;
 
+  const addToCart = () => {
+    addItem(
+      {
+        medicationId: medication.id,
+        commercialName: medication.commercialName,
+        presentation: medication.presentation,
+        price: medication.price,
+        requiresPrescription: medication.requiresPrescription,
+      },
+      quantity
+    );
+    setQuantity(1);
+  };
+
+  const handleAddToCart = () => {
+    addToCart();
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1500);
+  };
+
+  const handleBuyNow = () => {
+    addToCart();
+    router.push('/cart');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb */}
       <nav className="text-sm text-secondary-600 mb-8">
-        <a href="/" className="hover:text-primary-600">Inicio</a>
+        <Link href="/" className="hover:text-primary-600">Inicio</Link>
         <span className="mx-2">/</span>
-        <a href="/catalog" className="hover:text-primary-600">Catálogo</a>
+        <Link href="/catalog" className="hover:text-primary-600">Catálogo</Link>
         <span className="mx-2">/</span>
         <span className="text-secondary-800 font-medium">{medication.commercialName}</span>
       </nav>
@@ -203,13 +227,15 @@ export default function MedicationDetailsPage() {
                       : 'bg-secondary-200 text-secondary-500 cursor-not-allowed'
                   }`}
                   disabled={!medication.stock || medication.stock === 0}
+                  onClick={handleAddToCart}
                 >
-                  {medication.stock > 0 ? 'Agregar al carrito' : 'Agotado'}
+                  {medication.stock > 0 ? (justAdded ? 'Agregado ✓' : 'Agregar al carrito') : 'Agotado'}
                 </button>
 
                 <button
-                  className="w-full py-4 border-2 border-primary-600 text-primary-600 rounded-lg font-semibold text-lg hover:bg-primary-50 transition-colors"
+                  className="w-full py-4 border-2 border-primary-600 text-primary-600 rounded-lg font-semibold text-lg hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!medication.stock || medication.stock === 0}
+                  onClick={handleBuyNow}
                 >
                   Comprar ahora
                 </button>
@@ -223,8 +249,8 @@ export default function MedicationDetailsPage() {
                     <div>
                       <h4 className="font-semibold text-amber-800 mb-1">Requiere prescripción médica</h4>
                       <p className="text-amber-700 text-sm">
-                        Para comprar este medicamento necesitarás enviar una receta médica válida.
-                        Puedes enviarla durante el proceso de checkout.
+                        Para comprar este medicamento necesitas un enlace a tu fórmula médica.
+                        Lo ingresas en el carrito, antes de confirmar la orden.
                       </p>
                     </div>
                   </div>

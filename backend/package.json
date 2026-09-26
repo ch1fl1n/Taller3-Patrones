@@ -9,6 +9,7 @@
     "dev": "tsx src/server.ts",
     "seed": "tsx scripts/seed.ts",
     "test": "jest",
+    "test:e2e": "tsx scripts/e2e.ts",
     "lint": "eslint src/**/*.ts"
   },
   "keywords": [

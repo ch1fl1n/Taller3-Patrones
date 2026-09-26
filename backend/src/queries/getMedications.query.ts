@@ -42,16 +42,20 @@ export async function getMedications(
   let query = supabase.from('medication_summary').select('*', { count: 'exact' });
 
   // Aplicar filtros
-  if (search) {
-    query = query.or(`commercial_name.ilike.%${search}%,active_ingredient.ilike.%${search}%`);
+  // El texto va dentro de un filtro de PostgREST: se quitan los caracteres con significado
+  // en esa sintaxis (, . ( ) " \\) y los comodines de LIKE (% _ *) para evitar inyección de filtros.
+  const safeSearch = search?.replace(/[,.()"\\%_*]/g, ' ').trim();
+  if (safeSearch) {
+    query = query.or(`commercial_name.ilike.%${safeSearch}%,active_ingredient.ilike.%${safeSearch}%`);
   }
 
   if (categoryId) {
     query = query.eq('category_id', categoryId);
   }
 
-  if (activeIngredient) {
-    query = query.ilike('active_ingredient', `%${activeIngredient}%`);
+  const safeIngredient = activeIngredient?.replace(/[%_*\\]/g, ' ').trim();
+  if (safeIngredient) {
+    query = query.ilike('active_ingredient', `%${safeIngredient}%`);
   }
 
   if (requiresPrescription !== undefined) {

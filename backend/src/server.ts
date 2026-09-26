@@ -16,6 +16,7 @@ import { createHttpContext, createWsContext } from './context';
 import { queryResolvers } from './resolvers/query.resolvers';
 import { mutationResolvers } from './resolvers/mutation.resolvers';
 import { subscriptionResolvers } from './resolvers/subscription.resolvers';
+import { DateTimeScalar, UUIDScalar } from './scalars';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -30,6 +31,8 @@ const typeDefs = readFileSync(
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers: {
+    UUID: UUIDScalar,
+    DateTime: DateTimeScalar,
     ...queryResolvers,
     ...mutationResolvers,
     ...subscriptionResolvers,

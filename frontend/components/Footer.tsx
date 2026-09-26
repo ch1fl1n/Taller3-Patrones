@@ -1,5 +1,6 @@
 import { Pill, Phone, Mail, MapPin, Shield, Truck } from 'lucide-react';
 import Link from 'next/link';
+import { CategoryLinks } from './CategoryLinks';
 
 export function Footer() {
   return (
@@ -31,23 +32,18 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/cart" className="text-secondary-300 hover:text-white transition-colors">
+                  Carrito
+                </Link>
+              </li>
+              <li>
+                <Link href="/orders" className="text-secondary-300 hover:text-white transition-colors">
+                  Mis Órdenes
+                </Link>
+              </li>
+              <li>
                 <Link href="/prescription-info" className="text-secondary-300 hover:text-white transition-colors">
                   Cómo enviar recetas
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-secondary-300 hover:text-white transition-colors">
-                  Preguntas Frecuentes
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="text-secondary-300 hover:text-white transition-colors">
-                  Política de Privacidad
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-secondary-300 hover:text-white transition-colors">
-                  Términos de Servicio
                 </Link>
               </li>
             </ul>
@@ -56,33 +52,9 @@ export function Footer() {
           {/* Categorías */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Categorías</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/catalog/categories/analgesicos" className="text-secondary-300 hover:text-white transition-colors">
-                  Analgésicos
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog/categories/antibioticos" className="text-secondary-300 hover:text-white transition-colors">
-                  Antibióticos
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog/categories/antihipertensivos" className="text-secondary-300 hover:text-white transition-colors">
-                  Antihipertensivos
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog/categories/antidiabeticos" className="text-secondary-300 hover:text-white transition-colors">
-                  Antidiabéticos
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog/categories/vitaminas" className="text-secondary-300 hover:text-white transition-colors">
-                  Vitaminas y Suplementos
-                </Link>
-              </li>
-            </ul>
+            <div className="flex flex-col space-y-2">
+              <CategoryLinks className="text-secondary-300 hover:text-white transition-colors" />
+            </div>
           </div>
 
           {/* Contacto */}

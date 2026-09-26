@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import { GET_MEDICATIONS, GET_CATEGORIES } from '@/graphql/queries';
 import { MedicationCard } from '@/components/MedicationCard';
+import { useCart } from '@/components/CartProvider';
+import { formatPrice } from '@/lib/format';
 import { Filter, Search, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Medication {
@@ -26,70 +29,87 @@ interface Category {
   name: string;
 }
 
+interface CatalogFilter {
+  search: string;
+  categoryId: string;
+  requiresPrescription: string;
+  inStock: boolean;
+}
+
+const DEFAULT_FILTER: CatalogFilter = { search: '', categoryId: '', requiresPrescription: '', inStock: true };
+
+// useSearchParams exige un límite de Suspense en páginas prerenderizadas
 export default function CatalogPage() {
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [requiresPrescriptionFilter, setRequiresPrescriptionFilter] = useState('');
-  const [inStockFilter, setInStockFilter] = useState(true);
-  const [sortBy, setSortBy] = useState('name');
+  return (
+    <Suspense>
+      <Catalog />
+    </Suspense>
+  );
+}
+
+function Catalog() {
+  const searchParams = useSearchParams();
+  const { addItem } = useCart();
+
+  // Filtro en edición (formulario) y filtro aplicado (el que usa la consulta)
+  const [draft, setDraft] = useState<CatalogFilter>(DEFAULT_FILTER);
+  const [applied, setApplied] = useState<CatalogFilter>(DEFAULT_FILTER);
   const [viewMode, setViewMode] = useState('grid');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
 
-  // Fetch medications
+  // La búsqueda del encabezado y los enlaces de categorías llegan por la URL
+  useEffect(() => {
+    const fromUrl = {
+      ...DEFAULT_FILTER,
+      search: searchParams.get('search') ?? '',
+      categoryId: searchParams.get('categoryId') ?? '',
+    };
+    setDraft(fromUrl);
+    setApplied(fromUrl);
+    setCurrentPage(1);
+  }, [searchParams]);
+
   const { data: medicationsData, loading, error, refetch } = useQuery(GET_MEDICATIONS, {
     variables: {
       filter: {
-        search: search || undefined,
-        categoryId: categoryFilter || undefined,
-        requiresPrescription: requiresPrescriptionFilter === 'yes' ? true : requiresPrescriptionFilter === 'no' ? false : undefined,
-        inStock: inStockFilter,
+        search: applied.search || undefined,
+        categoryId: applied.categoryId || undefined,
+        requiresPrescription: applied.requiresPrescription === 'yes' ? true : applied.requiresPrescription === 'no' ? false : undefined,
+        inStock: applied.inStock || undefined,
         limit: itemsPerPage,
         offset: (currentPage - 1) * itemsPerPage,
       },
     },
   });
 
-  // Fetch categories
   const { data: categoriesData } = useQuery(GET_CATEGORIES);
 
   const handleSearch = () => {
+    setApplied({ ...draft, search: draft.search.trim() });
     setCurrentPage(1);
-    refetch({
-      filter: {
-        search: search || undefined,
-        categoryId: categoryFilter || undefined,
-        requiresPrescription: requiresPrescriptionFilter === 'yes' ? true : requiresPrescriptionFilter === 'no' ? false : undefined,
-        inStock: inStockFilter,
-        limit: itemsPerPage,
-        offset: 0,
-      },
-    });
   };
 
   const handleResetFilters = () => {
-    setSearch('');
-    setCategoryFilter('');
-    setRequiresPrescriptionFilter('');
-    setInStockFilter(true);
-    setSortBy('name');
+    setDraft(DEFAULT_FILTER);
+    setApplied(DEFAULT_FILTER);
     setCurrentPage(1);
   };
 
-  const totalPages = Math.ceil((medicationsData?.medications?.totalCount || 0) / itemsPerPage);
-
-  useEffect(() => {
-    refetch({
-      filter: {
-        search: search || undefined,
-        categoryId: categoryFilter || undefined,
-        requiresPrescription: requiresPrescriptionFilter === 'yes' ? true : requiresPrescriptionFilter === 'no' ? false : undefined,
-        inStock: inStockFilter,
-        limit: itemsPerPage,
-        offset: (currentPage - 1) * itemsPerPage,
+  const handleAddToCart = (medication: Medication) => {
+    addItem(
+      {
+        medicationId: medication.id,
+        commercialName: medication.commercialName,
+        presentation: medication.presentation,
+        price: medication.price,
+        requiresPrescription: medication.requiresPrescription,
       },
-    });
-  }, [currentPage, itemsPerPage]);
+      1
+    );
+  };
+
+  const totalPages = Math.ceil((medicationsData?.medications?.totalCount || 0) / itemsPerPage);
 
   return (
     <div className="space-y-8">
@@ -124,8 +144,8 @@ export default function CatalogPage() {
                   type="text"
                   placeholder="Nombre o principio activo"
                   className="input pl-10"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={draft.search}
+                  onChange={(e) => setDraft({ ...draft, search: e.target.value })}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
@@ -136,8 +156,8 @@ export default function CatalogPage() {
               <label className="block text-sm font-medium mb-2">Categoría</label>
               <select
                 className="input w-full"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
+                value={draft.categoryId}
+                onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })}
               >
                 <option value="">Todas las categorías</option>
                 {categoriesData?.categories?.map((category: Category) => (
@@ -153,8 +173,8 @@ export default function CatalogPage() {
               <label className="block text-sm font-medium mb-2">Requiere Prescripción</label>
               <select
                 className="input w-full"
-                value={requiresPrescriptionFilter}
-                onChange={(e) => setRequiresPrescriptionFilter(e.target.value)}
+                value={draft.requiresPrescription}
+                onChange={(e) => setDraft({ ...draft, requiresPrescription: e.target.value })}
               >
                 <option value="">Todos</option>
                 <option value="yes">Sí</option>
@@ -168,28 +188,14 @@ export default function CatalogPage() {
                 <input
                   type="checkbox"
                   id="inStock"
-                  checked={inStockFilter}
-                  onChange={(e) => setInStockFilter(e.target.checked)}
+                  checked={draft.inStock}
+                  onChange={(e) => setDraft({ ...draft, inStock: e.target.checked })}
                   className="h-5 w-5 text-primary-600 rounded"
                 />
                 <label htmlFor="inStock" className="text-sm font-medium">
                   Solo disponibles en stock
                 </label>
               </div>
-            </div>
-
-            {/* Sort */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Ordenar por</label>
-              <select
-                className="input w-full"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="name">Nombre (A-Z)</option>
-                <option value="price_asc">Precio (Menor a Mayor)</option>
-                <option value="price_desc">Precio (Mayor a Menor)</option>
-              </select>
             </div>
 
             <button
@@ -253,7 +259,7 @@ export default function CatalogPage() {
           </div>
 
           {/* Medications Grid/List */}
-          {loading ? (
+          {loading && !medicationsData ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="card h-96 animate-pulse">
@@ -300,12 +306,15 @@ export default function CatalogPage() {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary-700">
-                            {new Intl.NumberFormat('es-CO', {
-                              style: 'currency',
-                              currency: 'COP',
-                            }).format(medication.price)}
+                            {formatPrice(medication.price)}
                           </p>
-                          <button className="btn-primary mt-2">Agregar al carrito</button>
+                          <button
+                            onClick={() => handleAddToCart(medication)}
+                            disabled={!medication.inStock}
+                            className="btn-primary mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Agregar al carrito
+                          </button>
                         </div>
                       </div>
                     </div>

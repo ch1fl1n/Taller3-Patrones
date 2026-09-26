@@ -3,6 +3,8 @@
 import { Pill, ShoppingCart, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useCart } from './CartProvider';
+import { formatPrice } from '@/lib/format';
 
 interface MedicationCardProps {
   medication: {
@@ -21,19 +23,24 @@ interface MedicationCardProps {
 }
 
 export function MedicationCard({ medication }: MedicationCardProps) {
+  const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [justAdded, setJustAdded] = useState(false);
 
   const handleAddToCart = () => {
-    // En producción, esto agregaría al carrito global
-    console.log('Adding to cart:', medication.id, quantity);
-    alert(`Agregado al carrito: ${medication.commercialName} x${quantity}`);
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-    }).format(price);
+    addItem(
+      {
+        medicationId: medication.id,
+        commercialName: medication.commercialName,
+        presentation: medication.presentation,
+        price: medication.price,
+        requiresPrescription: medication.requiresPrescription,
+      },
+      quantity
+    );
+    setQuantity(1);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1500);
   };
 
   return (
@@ -126,8 +133,8 @@ export function MedicationCard({ medication }: MedicationCardProps) {
                   : 'bg-secondary-200 text-secondary-500 cursor-not-allowed'
               }`}
             >
-              <ShoppingCart className="h-5 w-5" />
-              <span>Agregar</span>
+              {justAdded ? <CheckCircle className="h-5 w-5" /> : <ShoppingCart className="h-5 w-5" />}
+              <span>{justAdded ? 'Agregado' : 'Agregar'}</span>
             </button>
           </div>
         </div>

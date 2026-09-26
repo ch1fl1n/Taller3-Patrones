@@ -3,9 +3,9 @@ import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 import { getMainDefinition } from '@apollo/client/utilities';
 
-// Configuración del servidor GraphQL
-const GRAPHQL_ENDPOINT = 'http://localhost:4000/graphql';
-const WS_ENDPOINT = 'ws://localhost:4000/graphql';
+// Configuración del servidor GraphQL (único endpoint: HTTP para queries/mutations, WS para subscriptions)
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:4000/graphql';
+const WS_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_WS_URL || 'ws://localhost:4000/graphql';
 
 // Sin autenticación: el backend trata cada request como el paciente demo (ver backend/src/context.ts)
 
@@ -38,33 +38,19 @@ const splitLink = typeof window !== 'undefined' && wsLink != null
     )
   : httpLink;
 
-// Configuración de la caché de Apollo
+// Configuración de la caché de Apollo.
+// Query.medications no necesita política propia: cada combinación de filtro (incluido
+// offset/limit) se guarda por separado, así que cada página es una entrada independiente.
 const cache = new InMemoryCache({
   typePolicies: {
-    Query: {
-      fields: {
-        medications: {
-          keyArgs: ['filter'],
-          merge(existing = { items: [], totalCount: 0 }, incoming) {
-            return {
-              ...incoming,
-              items: [...(existing.items || []), ...(incoming.items || [])],
-            };
-          },
-        },
-      },
-    },
     Medication: {
       keyFields: ['id'],
     },
     Order: {
       keyFields: ['id'],
       fields: {
-        items: {
-          merge(existing = [], incoming) {
-            return incoming;
-          },
-        },
+        // Los ítems de una orden no cambian: se reemplaza la lista entera
+        items: { merge: false },
       },
     },
   },
@@ -89,10 +75,3 @@ export const client = new ApolloClient({
   },
 });
 
-// Función para actualizar caché después de mutaciones
-export function updateCacheAfterMutation<T>(cache: InMemoryCache, query: any, newData: T) {
-  cache.updateQuery(query, (existingData) => {
-    if (!existingData) return { ...newData };
-    return { ...existingData, ...newData };
-  });
-}
