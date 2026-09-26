@@ -11,7 +11,7 @@ Este documento resume lo que se corrigió en el proyecto **Afirmative Pill** des
 Estos problemas impedían instalar, arrancar o usar el backend:
 
 | # | Problema | Efecto |
-|---|---|---|
+| --- | --- | --- |
 | 1 | `backend/package.json` declaraba `@apollo/server/express4` como dependencia. Es una ruta de importación, no un paquete. | `npm install` fallaba. |
 | 2 | El `.env` estaba en la raíz, pero el backend lo busca en `backend/`. Además tenía la URL y las claves del **storage S3** de Supabase, no las de la API. | El backend no podía conectarse a la base. |
 | 3 | No existía `.gitignore`. | Riesgo de subir credenciales y `node_modules`. |
@@ -90,7 +90,7 @@ stateDiagram-v2
 ### Comandos (write model)
 
 | Mutation | Qué hace ahora |
-|---|---|
+| --- | --- |
 | `createOrder` | 1. Valida la entrada: al menos un ítem, cantidades enteras positivas, URL http(s) de la evidencia.<br>2. Agrupa ítems repetidos del mismo medicamento.<br>3. Verifica stock y fórmula, y devuelve errores tipados (`InsufficientStockError`, `PrescriptionRequiredError`).<br>4. Llama a la función SQL `create_order`, que en **una sola transacción** bloquea las filas, vuelve a verificar el stock, lo descuenta, congela el precio unitario y guarda la evidencia.<br>5. Publica el evento e inicia el procesamiento asíncrono. |
 | `submitPrescriptionEvidence` | Reenvía la evidencia de una orden pendiente, por ejemplo después de un rechazo. La evidencia inicial ahora llega en `createOrder`. |
 | `cancelOrder` | La función SQL `cancel_order` cambia el estado y restaura el stock en una sola transacción. Puede cancelar el dueño o un admin. |
@@ -115,7 +115,7 @@ Hay otros cambios menores en el schema:
 La mutation responde de inmediato con la orden en `PENDING_APPROVAL`. Después, `backend/src/domain/orderWorkflow.ts` hace avanzar la orden y **publica cada cambio** en la subscription `orderStatusChanged`:
 
 | Caso | Qué pasa |
-|---|---|
+| --- | --- |
 | Sin medicamentos formulados | `APPROVED` a los 5 s y `DISPATCHED` 8 s después. |
 | Con fórmula que se valida | La evidencia pasa a `VALIDATED` a los 5 s, la orden a `APPROVED` y luego a `DISPATCHED`. |
 | Con fórmula que se rechaza | La evidencia pasa a `REJECTED`. La orden sigue en `PENDING_APPROVAL` hasta que el paciente reenvíe la evidencia. |
@@ -240,20 +240,37 @@ Todo se probó contra el servidor real compilado (`npm run build` + `node dist/s
 
 ---
 
-## 7. Pendientes
+## 7. Segunda ronda: frontend, GraphQL, pruebas y documentación
 
-1. **Frontend:**
-   - Carrito.
-   - `useMutation(CREATE_ORDER)` con manejo de la union de errores y el campo de evidencia de fórmula.
-   - Página `orders/[id]` con `useSubscription`.
-   - Actualizar la caché de Apollo tras las mutations.
-   - Corregir los enlaces que dan 404.
-2. **Documentación:**
-   - README: diagrama en Mermaid y justificaciones de CQRS, N+1 y consistencia eventual.
-   - INSTRUCCIONES: usar `supabase start` en vez de pegar el DDL.
-   - Reescribir ENTREGAS_FINALES.md, que afirma archivos y métricas que no existen.
-3. **Menores:**
-   - Los escalares `UUID` y `DateTime` no validan formato.
-   - La búsqueda interpola texto en el filtro de PostgREST.
-   - La política de caché del catálogo en Apollo duplica ítems al refrescar.
-   - No hay tests automatizados en el repo (`npm test` no tiene pruebas).
+Todos los pendientes de la primera ronda quedaron resueltos:
+
+**Frontend**
+
+- Carrito con contexto de React y `localStorage`.
+- Checkout con `useMutation(CREATE_ORDER)`, un mensaje por cada tipo de error de la union y el campo para el enlace de la fórmula.
+- Páginas `/orders` y `/orders/[id]`. El seguimiento usa `useSubscription`, con línea de tiempo, registro de eventos en vivo, reenvío de fórmula rechazada y cancelación.
+- Actualización de caché: `createOrder` escribe la orden en `myOrders` mediante un fragmento compartido.
+- Enlaces rotos: las categorías salen de la base de datos, se creó `/prescription-info` y se quitaron los enlaces a páginas inexistentes.
+- Se corrigieron tres bugs:
+  - El filtro de categorías del inicio enviaba slugs como si fueran UUID.
+  - El modo oscuro dejaba texto blanco sobre tarjetas blancas.
+  - El catálogo lanzaba una consulta con cada tecla y duplicaba ítems al refrescar.
+
+**GraphQL**
+
+- Escalares `UUID` y `DateTime` con validación (`backend/src/scalars.ts`).
+- Búsqueda saneada contra inyección de filtros de PostgREST.
+- Los resolvers `medications` y `medication` ya no cargan la categoría siempre: lo hace el field resolver con DataLoader, solo si el cliente la pide.
+
+**Pruebas**
+
+- `npm test`: 31 pruebas unitarias con Jest.
+- `npm run test:e2e`: 28 escenarios contra el servidor real, incluida la concurrencia.
+
+**Documentación**
+
+- README reescrito con diagrama Mermaid y las justificaciones de CQRS, N+1 y consistencia eventual, con logs reales del DataLoader.
+- INSTRUCCIONES como guía de levantamiento.
+- ENTREGAS_FINALES con la evidencia por criterio de la rúbrica y el guion del video.
+
+Lo que queda pendiente está en la checklist de [ENTREGAS_FINALES.md](ENTREGAS_FINALES.md#6-checklist-antes-de-entregar).

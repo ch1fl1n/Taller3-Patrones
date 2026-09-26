@@ -1,238 +1,169 @@
-# Instrucciones de Ejecución - Afirmative Pill
+# Guía de inicio: cómo levantar Afirmative Pill
 
-## Requisitos Previos
+Esta guía lleva el proyecto desde un repositorio recién clonado hasta la app funcionando en el navegador. Toma unos 10 minutos la primera vez, la mayor parte en descargas.
 
-- Node.js 18+
-- Cuenta de [Supabase](https://supabase.com/)
-- Git
+Para entender la arquitectura, ver [README.md](README.md).
 
-## Configuración del Proyecto
+---
 
-### 1. Clonar el repositorio
+## 1. Requisitos
+
+| Herramienta | Versión | Para qué | Comprobar |
+| --- | --- | --- | --- |
+| Node.js + npm | 18 o superior (probado con 26) | Backend y frontend | `node -v` |
+| Docker | Docker Desktop o Docker Engine | Supabase local corre en contenedores | `docker info` |
+| Supabase CLI | 2.x | Levanta la base de datos y aplica migraciones | `supabase -v` |
+
+En Arch/CachyOS: `sudo pacman -S nodejs npm`. Para Supabase CLI, ver <https://supabase.com/docs/guides/cli>.
+
+**Memoria:** Supabase local usa unos 2 a 3 GB. En Docker Desktop, 4 GB asignados a la VM (*Settings → Resources*) son suficientes.
+
+---
+
+## 2. Base de datos (Supabase local)
+
+Desde la **raíz del repositorio**:
+
 ```bash
-git clone <url-del-repositorio>
-cd Taller3-Patrones
+supabase start
 ```
 
-### 2. Configurar Supabase
+La primera vez descarga las imágenes (varios minutos). Al terminar, la base ya queda **lista y con datos**, porque se aplican automáticamente:
 
-1. Crear un proyecto en [Supabase](https://supabase.com/)
-2. Ir a "SQL Editor" y ejecutar el DDL:
-   ```sql
-   -- Copiar y pegar el contenido de scripts/supabase_ddl.sql
-   ```
-3. Obtener las credenciales de la base de datos:
-   - `SUPABASE_URL` (en Settings > Database > Connection String)
-   - `SUPABASE_ANON_KEY` (en Settings > API > Project API keys)
-   - `SUPABASE_SERVICE_ROLE_KEY` (en Settings > API > Project API keys)
+- `supabase/migrations/`: tablas, índices, la vista `medication_summary` y las funciones transaccionales `create_order` y `cancel_order`.
+- `supabase/seed.sql`: 10 categorías, 50 medicamentos y el paciente demo.
 
-### 3. Configurar Backend
+No hay que pegar SQL en ningún lado ni ejecutar `npm run seed`.
+
+Servicios que quedan disponibles:
+
+| Servicio | URL |
+| --- | --- |
+| API de Supabase | <http://127.0.0.1:54321> |
+| Studio (panel web para ver las tablas) | <http://127.0.0.1:54323> |
+
+---
+
+## 3. Backend
+
+### 3.1 Variables de entorno
 
 ```bash
 cd backend
 cp .env.example .env
 ```
 
-Editar el archivo `.env` con las credenciales de Supabase:
-```env
-SUPABASE_URL=tu_url_de_supabase
-SUPABASE_ANON_KEY=tu_anon_key
-SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
-PORT=4000
-NODE_ENV=development
-```
+Completa `backend/.env` con los valores que muestra `supabase status -o env` (ejecutado en la raíz del repo):
 
-Instalar dependencias:
+| Variable en `backend/.env` | Valor de `supabase status -o env` |
+| --- | --- |
+| `SUPABASE_URL` | `API_URL` (normalmente `http://127.0.0.1:54321`) |
+| `SUPABASE_ANON_KEY` | `ANON_KEY` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `SERVICE_ROLE_KEY` |
+
+> ⚠️ **Error común:** no usar los valores `S3_PROTOCOL_ACCESS_KEY_*` ni la URL `.../storage/v1/s3`. Esas son credenciales del almacenamiento de archivos, no de la API.
+
+`backend/.env` está en `.gitignore`: nunca se sube al repositorio.
+
+### 3.2 Instalar y arrancar
+
 ```bash
 npm install
-```
-
-### 4. Cargar Datos de Prueba
-
-```bash
-npm run seed
-```
-
-Este comando cargará el dataset de 50 medicamentos en la base de datos.
-
-### 5. Iniciar Backend
-
-```bash
 npm run dev
 ```
 
-El servidor GraphQL estará disponible en:
-- **GraphQL Playground**: http://localhost:4000/graphql
-- **Health Check**: http://localhost:4000/health
-- **WebSocket para Subscriptions**: ws://localhost:4000/graphql
+Debe mostrar:
 
-### 6. Configurar Frontend
+```text
+🚀 Servidor GraphQL listo en http://localhost:4000/graphql
+🔌 Subscriptions disponibles en ws://localhost:4000/graphql
+```
+
+Abrir <http://localhost:4000/graphql> muestra **Apollo Sandbox**, desde donde se pueden ejecutar queries a mano. Hay ejemplos en [`backend/examples/graphql_queries.graphql`](backend/examples/graphql_queries.graphql).
+
+Deja esta terminal abierta: aquí salen los logs del DataLoader y del procesamiento de órdenes.
+
+---
+
+## 4. Frontend
+
+En **otra terminal**:
 
 ```bash
 cd frontend
 npm install
-```
-
-### 7. Iniciar Frontend
-
-```bash
 npm run dev
 ```
 
-La aplicación frontend estará disponible en:
-- **URL**: http://localhost:3000
+Abre <http://localhost:3000>.
 
-## Verificación de Funcionalidad
+El frontend apunta por defecto a `http://localhost:4000/graphql`. Si el backend está en otra dirección, crea `frontend/.env.local` con:
 
-### 1. Probar GraphQL Playground
-- Abrir http://localhost:4000/graphql
-- Ejecutar la siguiente query para verificar que los medicamentos se cargaron:
-
-```graphql
-query TestMedications {
-  medications(filter: { limit: 5 }) {
-    items {
-      id
-      commercialName
-      price
-      stock
-    }
-    totalCount
-  }
-}
+```env
+NEXT_PUBLIC_GRAPHQL_URL=http://otro-host:4000/graphql
+NEXT_PUBLIC_GRAPHQL_WS_URL=ws://otro-host:4000/graphql
 ```
 
-### 2. Probar Frontend
-- Abrir http://localhost:3000
-- Navegar por el catálogo
-- Ver detalles de medicamentos
-- Probar búsqueda y filtros
+---
 
-### 3. Verificar DataLoader (N+1)
-Revisar los logs del backend cuando cargues una página con múltiples medicamentos:
-```
-[DataLoader] batching 5 category ids
-[DataLoader] batching 10 medication ids
-```
+## 5. Probar que todo funciona
 
-### 4. Probar Subscriptions
-Usar GraphQL Playground para suscribirse a cambios:
-```graphql
-subscription TestSubscription {
-  orderStatusChanged(orderId: "uuid-de-ejemplo") {
-    id
-    status
-  }
-}
-```
+### Recorrido manual (5 minutos)
 
-## Estructura del Proyecto
+1. **Catálogo:** entra a *Catálogo*, busca "amox" y filtra por una categoría.
+2. **Orden sin fórmula:** agrega *Paracetamol* al carrito y confirma la orden. En la pantalla de seguimiento, **sin recargar**, la orden pasa a *Aprobada* (~5 s) y a *Despachada* (~8 s después).
+3. **Fórmula obligatoria:** agrega *Amoxicilina* y confirma sin enlace. Debe aparecer el error de fórmula obligatoria.
+4. **Fórmula rechazada y reenviada:**
+   - Confirma con `https://ejemplo.com/formula-rechazada.pdf`. La fórmula queda *Rechazada*.
+   - Reenvíala con `https://ejemplo.com/formula.pdf`. La orden queda *Aprobada*.
+5. **Cancelar:** en una orden pendiente, pulsa *Cancelar orden*.
 
-### Backend (`/backend`)
-```
-src/
-├── commands/           # Modelo de escritura (CQRS)
-│   ├── createOrder.command.ts
-│   ├── submitPrescriptionEvidence.command.ts
-│   ├── confirmOrder.command.ts
-│   └── cancelOrder.command.ts
-├── queries/            # Modelo de lectura (CQRS)
-│   ├── getMedications.query.ts
-│   └── getOrderProjection.query.ts
-├── loaders/           # DataLoaders para N+1
-│   └── categoryLoader.ts
-├── resolvers/         # Resolvers GraphQL
-│   ├── query.resolvers.ts
-│   ├── mutation.resolvers.ts
-│   └── subscription.resolvers.ts
-├── schema/            # Schema GraphQL
-│   └── schema.graphql
-├── datasources/       # Cliente Supabase
-│   └── supabaseClient.ts
-├── types.ts           # Tipos TypeScript
-├── context.ts         # Contexto de Apollo
-└── server.ts          # Servidor principal
+> La revisión de fórmulas es **simulada y predecible**: un enlace que contenga `rechaz` se rechaza; cualquier otro enlace http(s) se aprueba.
+
+### Pruebas automáticas
+
+```bash
+cd backend
+npm test            # 31 pruebas unitarias, no necesitan base de datos
+npm run test:e2e    # 28 escenarios; necesita Supabase y "npm run dev" corriendo (~40 s)
 ```
 
-### Frontend (`/frontend`)
-```
-app/
-├── layout.tsx         # Layout principal con ApolloProvider
-├── page.tsx           # Página de inicio
-├── catalog/           # Catálogo de medicamentos
-│   └── page.tsx
-├── medication/[id]/   # Detalles de medicamento
-│   └── page.tsx
-components/            # Componentes React
-├── ApolloProviderWrapper.tsx
-├── Header.tsx
-├── Footer.tsx
-└── MedicationCard.tsx
-lib/
-└── apolloClient.ts    # Configuración de Apollo Client
-graphql/              # Queries, mutations, subscriptions
-├── queries.ts
-├── mutations.ts
-└── subscriptions.ts
+`test:e2e` crea órdenes de prueba. Para dejar la base como recién instalada:
+
+```bash
+supabase db reset   # desde la raíz del repo; vuelve a aplicar migraciones y seed
 ```
 
-## Características Implementadas
+### Despacho manual como administrador
 
-### ✅ Backend GraphQL + CQRS
-- Schema GraphQL completo con tipos fuertes
-- Separación física de commands y queries (CQRS)
-- DataLoader para mitigación N+1
-- Subscriptions para tiempo real
-- Manejo de errores ricos con union types
-- Validaciones de negocio (stock, prescripción)
+La autenticación está simulada. Para ejecutar `confirmOrder` en Apollo Sandbox, agrega el header `x-demo-role: admin` (pestaña *Headers*).
 
-### ✅ Frontend React/Next.js
-- Apollo Client configurado con split link (HTTP + WS)
-- Catálogo con búsqueda y filtros
-- Detalles de medicamento
-- Diseño responsive con Tailwind CSS
-- Componentes reutilizables
+---
 
-### ✅ Base de Datos
-- DDL completo para Supabase (PostgreSQL)
-- Dataset de 50 medicamentos reales
-- Funciones almacenadas para atomicidad
-- Índices para performance
+## 6. Apagar
 
-### ✅ Documentación
-- README.md con arquitectura y ejemplos
-- INSTRUCCIONES.md con pasos de ejecución
-- Ejemplos de queries GraphQL
-- Diagramas de arquitectura
+```bash
+# Ctrl+C en las terminales del backend y del frontend
+supabase stop       # desde la raíz del repo; los datos se conservan
+```
 
-## Solución de Problemas
+Docker Desktop reserva la memoria de su VM aunque no haya contenedores. Para liberarla del todo:
 
-### Backend no inicia
-- Verificar que las credenciales de Supabase sean correctas
-- Verificar que el puerto 4000 esté disponible
-- Revisar logs de error en la consola
+```bash
+systemctl --user stop docker-desktop
+```
 
-### Frontend no se conecta al backend
-- Verificar que el backend esté ejecutándose en http://localhost:4000
-- Revisar la configuración en `frontend/lib/apolloClient.ts`
-- Verificar CORS en el backend
+---
 
-### No se cargan medicamentos
-- Ejecutar `npm run seed` en el backend
-- Verificar conexión a Supabase
-- Revisar logs del servidor
+## 7. Solución de problemas
 
-### Subscriptions no funcionan
-- Verificar que el backend soporte WebSockets
-- Probar en GraphQL Playground primero
-- Revisar configuración de WebSocket en Apollo Client
-
-## Recursos Adicionales
-
-- [Documentación de Apollo Server](https://www.apollographql.com/docs/apollo-server/)
-- [Documentación de Apollo Client](https://www.apollographql.com/docs/react/)
-- [Documentación de Supabase](https://supabase.com/docs)
-- [Documentación de Next.js](https://nextjs.org/docs)
-
-## Licencia
-MIT
+| Síntoma | Causa probable | Solución |
+| --- | --- | --- |
+| `Missing Supabase configuration` al arrancar el backend | No existe `backend/.env` o está incompleto | Paso 3.1 |
+| El backend arranca pero toda consulta falla | `.env` con credenciales S3 o URL `/storage/v1/s3` | Usar `API_URL` y `SERVICE_ROLE_KEY` de `supabase status -o env` |
+| `relation "medications" does not exist` | Supabase no aplicó las migraciones | `supabase db reset` |
+| `supabase status` dice que no hay contenedor | Supabase se inició desde otra carpeta, o está detenido | Ejecutar `supabase start` **desde la raíz del repo** |
+| `port 4000 is already in use` | Hay otro backend corriendo | Cerrarlo, o usar `PORT=4001 npm run dev` y ajustar `NEXT_PUBLIC_GRAPHQL_URL` |
+| El frontend muestra "Error al cargar los medicamentos" | El backend no está corriendo | Paso 3.2 |
+| El seguimiento dice "Sin conexión en tiempo real" | El WebSocket no conecta con el backend | Verificar que el backend esté en `ws://localhost:4000/graphql` |
+| Una orden se queda en "Pendiente" para siempre | El backend se reinició durante el procesamiento (los temporizadores viven en memoria) | Crear una orden nueva; es una limitación conocida, documentada en el README |

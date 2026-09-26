@@ -1,218 +1,129 @@
-# Entregas Finales - Afirmative Pill
+# Entregas finales: Afirmative Pill
 
-## 📦 Archivos Entregados
+Este documento dice **qué se entrega**, **dónde está la evidencia de cada criterio de la rúbrica** y **cómo grabar el video de sustentación**. Todo lo que se afirma aquí se puede comprobar en el repositorio o con las pruebas automáticas.
 
-### 1. Código Fuente
-```
-Taller3-Patrones/
-├── backend/                    # Servidor GraphQL + CQRS
-│   ├── src/
-│   │   ├── commands/          # Modelo de escritura (4 commands)
-│   │   ├── queries/           # Modelo de lectura (3 queries)
-│   │   ├── loaders/           # DataLoaders para N+1
-│   │   ├── resolvers/         # Resolvers GraphQL
-│   │   ├── schema/            # Schema GraphQL completo
-│   │   ├── datasources/       # Cliente Supabase
-│   │   └── types.ts           # Tipos TypeScript
-│   ├── scripts/               # Script de seed
-│   ├── package.json           # Dependencias backend
-│   └── tsconfig.json          # Configuración TypeScript
-├── frontend/                  # Aplicación React/Next.js
-│   ├── app/                   # Páginas Next.js
-│   ├── components/            # Componentes React
-│   ├── lib/                   # Configuración Apollo Client
-│   ├── graphql/               # Queries/Mutations/Subscriptions
-│   ├── package.json           # Dependencias frontend
-│   └── tailwind.config.ts     # Configuración Tailwind
-├── scripts/                   # Scripts utilitarios
-│   ├── supabase_ddl.sql       # DDL de base de datos
-│   ├── medications_dataset.csv # Dataset de 50 medicamentos
-│   ├── verification.js        # Script de verificación
-│   └── package.json           # Dependencias scripts
-└── documentation/             # Documentación
-    ├── planning.md            # Planificación original
-    ├── README.md              # Documentación principal
-    └── INSTRUCCIONES.md       # Guía de ejecución
-```
-
-### 2. Diagramas y Artefactos
-- **Diagrama de Arquitectura**: `architecture_diagram.mermaid`
-- **Checklist de Rúbrica**: `rubrica_checklist.md`
-- **Resumen Ejecutivo**: `resumen_ejecutivo.md`
-
-### 3. Dataset
-- **50 medicamentos** con información real
-- **10+ categorías** terapéuticas
-- **Datos completos**: precio, stock, indicaciones, etc.
-
-## 🎯 Criterios de Rúbrica Cumplidos
-
-### ✅ Diseño GraphQL (40%)
-- [x] Schema SDL completo con tipos fuertes
-- [x] DataLoader implementado con logs de evidencia
-- [x] Queries optimizadas (MedicationSummary vs Medication)
-- [x] Mutations con union types para errores
-- [x] Subscriptions para tiempo real
-
-### ✅ CQRS y Dominio (25%)
-- [x] Separación física commands/ vs queries/
-- [x] 4 commands con validaciones de negocio
-- [x] Máquina de estados de órdenes implementada
-- [x] Invariantes protegidas (stock, prescripción)
-- [x] Consistencia eventual con subscriptions
-
-### ✅ Frontend Apollo (20%)
-- [x] Apollo Client configurado con split link
-- [x] 3 hooks GraphQL implementados
-- [x] Gestión de caché con typePolicies
-- [x] UI responsiva con Tailwind CSS
-- [x] Catálogo con búsqueda y filtros
-
-### ✅ Persistencia y Docs (15%)
-- [x] DDL Supabase completo ejecutado
-- [x] Dataset de 50 medicamentos cargado
-- [x] Documentación completa y clara
-- [x] Script de verificación automatizado
-- [x] Ejemplos de queries GraphQL
-
-## 🚀 Instrucciones de Ejecución Rápida
-
-### 1. Configuración Inicial
-```bash
-# Clonar repositorio
-git clone <url>
-cd Taller3-Patrones
-
-# Configurar Supabase
-# 1. Crear proyecto en supabase.com
-# 2. Ejecutar scripts/supabase_ddl.sql
-# 3. Obtener credenciales
-```
-
-### 2. Backend
-```bash
-cd backend
-cp .env.example .env  # Editar con credenciales Supabase
-npm install
-npm run seed          # Cargar 50 medicamentos
-npm run dev           # Iniciar servidor en puerto 4000
-```
-
-### 3. Frontend
-```bash
-cd frontend
-npm install
-npm run dev           # Iniciar aplicación en puerto 3000
-```
-
-### 4. Verificación
-```bash
-cd scripts
-npm install
-npm run verify        # Ejecutar pruebas automatizadas
-```
-
-## 🔍 Puntos de Verificación
-
-### Para el Video de Sustentación
-1. **Network Tab**: Mostrar solo llamadas a `/graphql`
-2. **DataLoader Logs**: Mostrar mensajes de batching
-3. **Flujo Completo**: Catálogo → Carrito → Orden → Seguimiento
-4. **Manejo de Errores**: Stock insuficiente, prescripción requerida
-5. **Subscriptions**: Actualización en tiempo real de estado de orden
-
-### Para la Evaluación
-1. **Schema GraphQL**: http://localhost:4000/graphql
-2. **Frontend Funcional**: http://localhost:3000
-3. **Base de Datos**: Verificar 50 medicamentos cargados
-4. **Código CQRS**: Revisar estructura commands/ vs queries/
-
-## 📊 Métricas Técnicas
-
-### Backend
-- **Líneas de código**: ~2,000
-- **Archivos TypeScript**: 18
-- **Resolvers GraphQL**: 3
-- **DataLoaders**: 4
-- **Commands CQRS**: 4
-
-### Frontend
-- **Líneas de código**: ~1,500
-- **Componentes React**: 6
-- **Páginas Next.js**: 3
-- **Queries GraphQL**: 5
-- **Mutations**: 4
-
-### Base de Datos
-- **Tablas**: 6
-- **Funciones almacenadas**: 3
-- **Índices**: 8
-- **Dataset**: 50 medicamentos
-
-## 🏆 Logros Técnicos Destacados
-
-### 1. Arquitectura Limpia
-- Separación clara de concerns (CQRS)
-- Type safety end-to-end
-- Código modular y mantenible
-
-### 2. Performance Optimizada
-- DataLoader para N+1
-- Índices en base de datos
-- Caché Apollo configurado
-- Paginación implementada
-
-### 3. Experiencia de Usuario
-- UI responsiva y moderna
-- Búsqueda y filtros avanzados
-- Feedback en tiempo real
-- Manejo de errores amigable
-
-### 4. Developer Experience
-- Hot reload completo
-- GraphQL Playground integrado
-- Scripts automatizados
-- Documentación completa
-
-## 📚 Recursos Adicionales
-
-### Enlaces Útiles
-- **Frontend**: http://localhost:3000
-- **GraphQL Playground**: http://localhost:4000/graphql
-- **Health Check**: http://localhost:4000/health
-- **Documentación**: README.md e INSTRUCCIONES.md
-
-### Comandos de Ayuda
-```bash
-# Backend
-npm run dev      # Desarrollo
-npm run seed     # Cargar datos
-npm run build    # Compilar TypeScript
-
-# Frontend
-npm run dev      # Desarrollo
-npm run build    # Build producción
-npm start        # Producción
-
-# Verificación
-npm run verify   # Pruebas automatizadas
-```
-
-## 🎉 Conclusión
-
-El proyecto **Afirmative Pill** representa una implementación **completa, robusta y profesional** de una plataforma e-commerce farmacéutica que demuestra dominio de:
-
-1. **Arquitectura GraphQL moderna** con type safety
-2. **Patrón CQRS** con separación física real
-3. **Frontend reactivo** con Apollo Client
-4. **Base de datos relacional** optimizada
-5. **Buenas prácticas** de desarrollo de software
-
-**Estado del proyecto**: ✅ COMPLETO Y FUNCIONAL
-**Cobertura de rúbrica**: ✅ 100%
-**Listo para evaluación**: ✅ SÍ
+- Para levantar el proyecto: [INSTRUCCIONES.md](INSTRUCCIONES.md)
+- Arquitectura y justificaciones: [README.md](README.md)
 
 ---
-*Proyecto desarrollado para el Taller 3 de Patrones de Arquitectura*
-*Fecha de entrega: Septiembre 2026*
-*Equipo: Afirmative Pill Development Team*
+
+## 1. Entregables
+
+| Entregable | Ubicación | Estado |
+| --- | --- | --- |
+| Código del backend (GraphQL + CQRS) | `backend/` | ✅ Listo |
+| Código del frontend (Next.js + Apollo Client) | `frontend/` | ✅ Listo |
+| Schema GraphQL completo | `backend/src/schema/schema.graphql` | ✅ Listo |
+| Esquema de base de datos | `supabase/migrations/` | ✅ Listo |
+| Dataset de 50 medicamentos cargado | `supabase/seed.sql` (generado de `scripts/medications_dataset.csv`) | ✅ Listo |
+| README con diagrama y justificaciones de CQRS, N+1 y consistencia eventual | `README.md` | ✅ Listo |
+| Guía de levantamiento | `INSTRUCCIONES.md` | ✅ Listo |
+| Pruebas automáticas | `backend/src/__tests__/` (unitarias) y `backend/scripts/e2e.ts` | ✅ Listo |
+| Video de sustentación (5 a 8 min) | Por grabar; guion en la [sección 4](#4-guion-del-video-de-sustentación-5-a-8-minutos) | ⏳ Pendiente |
+
+---
+
+## 2. Cobertura de la rúbrica y dónde está la evidencia
+
+### Diseño GraphQL (40 %)
+
+| Criterio | Evidencia |
+| --- | --- |
+| Schema SDL fuertemente tipado | `schema.graphql`: object types, enums (`OrderStatus`, `PrescriptionValidationStatus`), inputs y escalares propios (`UUID`, `DateTime`, con validación en `backend/src/scalars.ts`) |
+| Evitar over-fetching | `MedicationSummary` (catálogo) vs. `Medication` (ficha). Además, la categoría solo se consulta si el cliente la pide (field resolver con DataLoader) |
+| Mutations ricas en errores de validación | Unions de éxito y errores que implementan `MutationError`: `InsufficientStockError`, `PrescriptionRequiredError`, `InvalidOrderStatusError`, `OrderNotFoundError`, `ValidationError` |
+| Mitigación N+1 | `backend/src/loaders/categoryLoader.ts`, un loader por request en `context.ts`. Logs de agrupación en la consola del backend (ver README, sección N+1) |
+| Subscriptions | `orderStatusChanged(orderId)` sobre `graphql-ws`, en el mismo endpoint `/graphql` |
+
+### CQRS y dominio (25 %)
+
+| Criterio | Evidencia |
+| --- | --- |
+| Separación write/read | `backend/src/commands/` (mutations) vs. `backend/src/queries/` (queries); los resolvers solo delegan |
+| Invariantes de negocio | Stock atómico y precio congelado en `create_order` (`supabase/migrations/20260925000100_order_commands.sql`); fórmula obligatoria en `createOrder.command.ts` |
+| Máquina de estados | `backend/src/domain/orderStatus.stateMachine.ts` + `cancel_order` en SQL |
+| Consistencia eventual | `backend/src/domain/orderWorkflow.ts`: la orden se crea en `PENDING_APPROVAL`, avanza de forma asíncrona y cada cambio se publica a la subscription |
+
+### Frontend Apollo (20 %)
+
+| Criterio | Evidencia |
+| --- | --- |
+| ApolloProvider / contexto | `frontend/app/layout.tsx` → `components/ApolloProviderWrapper.tsx` |
+| `useQuery` | Catálogo, ficha, mis órdenes, seguimiento |
+| `useMutation` con manejo de la union | Checkout en `app/cart/page.tsx`; cancelar y reenviar fórmula en `app/orders/[id]/page.tsx` |
+| `useSubscription` | Seguimiento en vivo en `app/orders/[id]/page.tsx` |
+| Actualización de caché tras mutaciones | `update()` de `createOrder` escribe la orden en `myOrders` (fragmento compartido en `graphql/fragments.ts`); cancelar y reenviar actualizan `Order:<id>` normalizada |
+| Estados loading / error / data | Todas las pantallas |
+
+### Persistencia y documentación (15 %)
+
+| Criterio | Evidencia |
+| --- | --- |
+| Supabase (PostgreSQL) con el dataset | 50 medicamentos y 10 categorías normalizadas; se cargan con `supabase start` |
+| Documentación | README (arquitectura, diagrama Mermaid, justificaciones), INSTRUCCIONES, CAMBIOS |
+
+---
+
+## 3. Verificación realizada
+
+| Prueba | Comando | Resultado |
+| --- | --- | --- |
+| Unitarias: máquina de estados, reglas de fórmula, escalares | `npm test` | 31/31 ✅ |
+| Punta a punta contra el servidor real | `npm run test:e2e` | 28/28 ✅ |
+| Compilación del backend y del frontend sin errores de tipos | `npm run build` en cada carpeta | ✅ |
+
+Qué cubre `test:e2e`:
+
+- Búsqueda del catálogo y saneamiento contra inyección de filtros.
+- Escalar `UUID`.
+- Todos los errores tipados.
+- Stock descontado y restaurado.
+- **5 compras simultáneas contra stock 1 → exactamente 1 éxito.**
+- Subscription recibiendo `APPROVED → DISPATCHED`.
+- Fórmula rechazada, reenviada y aprobada.
+- Despacho como admin.
+
+---
+
+## 4. Guion del video de sustentación (5 a 8 minutos)
+
+**Preparación:**
+
+- Ejecutar `supabase db reset`, para que *Mis órdenes* empiece vacío.
+- Levantar el backend y el frontend (ver INSTRUCCIONES).
+- Dejar la pantalla dividida: navegador con DevTools (pestaña *Network*, filtro *Fetch/XHR*) a un lado y la terminal del backend al otro.
+- Tener a mano los dos enlaces de fórmula:
+  - `https://ejemplo.com/formula-rechazada.pdf`
+  - `https://ejemplo.com/formula.pdf`
+
+| Tiempo | Qué mostrar | Qué decir |
+| --- | --- | --- |
+| 0:00 – 0:45 | Diagrama del README | Monolito modular, un solo endpoint GraphQL, CQRS y Supabase. |
+| 0:45 – 1:45 | `schema.graphql`: `MedicationSummary` vs. `Medication`, y la union `CreateOrderResult` | Cómo el schema evita el over-fetching y cómo los errores de negocio son tipos, no excepciones. |
+| 1:45 – 2:45 | Catálogo en el navegador + *Network* + terminal | Todas las llamadas van a `/graphql` (cero REST). Mostrar en la terminal `[DataLoader] batching 6 category ids`: 12 medicamentos, 1 sola consulta de categorías. |
+| 2:45 – 3:15 | Carpetas `commands/` y `queries/` | La separación CQRS; los resolvers solo delegan. |
+| 3:15 – 4:30 | Agregar Paracetamol → carrito → confirmar | La orden nace en *Pendiente de aprobación* (consistencia eventual). Sin recargar, pasa a *Aprobada* y *Despachada*; mostrar el panel "Tiempo real" y la conexión WS en *Network*. |
+| 4:30 – 5:30 | Agregar Amoxicilina → confirmar sin enlace → confirmar con el enlace "rechazada" | Aparece `PrescriptionRequiredError` y luego la fórmula rechazada; la orden sigue pendiente. Reenviar con el enlace válido: pasa a *Aprobada*. |
+| 5:30 – 6:15 | Crear otra orden y cancelarla; abrir *Mis órdenes* | Cancelar restaura el stock en la misma transacción. La orden nueva ya estaba en la lista gracias a la actualización de caché, sin refetch. |
+| 6:15 – 7:00 | Terminal: `npm run test:e2e` (o su resultado ya ejecutado) | Resaltar la prueba de concurrencia: 5 compras simultáneas con stock 1 dan exactamente 1 éxito. |
+
+---
+
+## 5. Limitaciones conocidas (decisiones de alcance)
+
+- **Sin autenticación real.** Cada request es el paciente demo; el rol admin se simula con el header `x-demo-role: admin`. La rúbrica no la evalúa (`planning.md`, sección 12).
+- **Revisión de fórmulas simulada.** Es predecible: un enlace que contenga "rechaz" se rechaza.
+- **Procesamiento asíncrono en memoria.** Si el backend se reinicia, las órdenes en curso quedan en su estado actual. En producción se usaría una cola de trabajos.
+- **PubSub en memoria.** Las subscriptions funcionan con una sola instancia del backend; para escalar horizontalmente habría que usar Redis u otro broker.
+- **`scripts/verification.js` quedó obsoleto.** Lo reemplaza `npm run test:e2e`.
+
+---
+
+## 6. Checklist antes de entregar
+
+- [ ] Recorrido manual completo en el navegador (INSTRUCCIONES, sección 5) sin errores en la consola.
+- [ ] `npm test` y `npm run test:e2e` en verde.
+- [ ] Grabar el video siguiendo el guion (5 a 8 minutos).
+- [ ] Decidir si se elimina `scripts/verification.js` (obsoleto).
+- [ ] Unir la rama `fix/backend-flujo-ordenes` a `main` y subirla al repositorio.
+- [ ] Confirmar que ningún `.env` quedó en el repositorio (`git ls-files | grep .env` solo debe mostrar `backend/.env.example`).
