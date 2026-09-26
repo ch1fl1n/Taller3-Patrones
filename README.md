@@ -1,5 +1,11 @@
 # Afirmative Pill: e-commerce farmacéutico con GraphQL y CQRS
 
+## Colaborators
+
+ - Daniel David Gomez Britto
+ - Juan Camilo Silva Velasco
+
+
 Plataforma de venta de medicamentos construida para el **Taller 3 de Patrones de Arquitectura**. Toda la comunicación entre cliente y servidor pasa por un único endpoint GraphQL (queries, mutations y subscriptions), el backend separa el modelo de escritura del de lectura (CQRS) y los datos viven en Supabase (PostgreSQL).
 
 - **Levantar el proyecto:** [INSTRUCCIONES.md](INSTRUCCIONES.md)
@@ -207,6 +213,3 @@ npm run test:e2e    # 28 escenarios contra el servidor real (necesita Supabase y
 
 Apollo Server 4 · Express · graphql-ws · DataLoader · Supabase (PostgreSQL 17) · Next.js 14 (App Router) · Apollo Client 3 · Tailwind CSS · TypeScript · Jest
 
-## Licencia
-
-MIT
